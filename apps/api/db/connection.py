@@ -21,22 +21,28 @@ def _connect_kwargs(db_path: str) -> dict:
     return {}
 
 
-async def _set_journal_mode(db) -> None:
-    """Set WAL mode if supported, fall back to DELETE (Azure File Share/SMB)."""
-    try:
-        await db.execute("PRAGMA journal_mode=WAL")
-    except Exception:
-        await db.execute("PRAGMA journal_mode=DELETE")
+def _cleanup_wal_files(db_path: str) -> None:
+    """Remove stale WAL/SHM files that block SQLite on SMB mounts."""
+    if db_path.startswith("file:"):
+        return
+    for suffix in ("-wal", "-shm"):
+        path = db_path + suffix
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            pass
 
 
 @contextlib.asynccontextmanager
 async def get_db(db_path: str):
     """
     Async context manager for SQLite connections.
-    Sets WAL mode, enables foreign keys, and configures performance PRAGMAs.
+    Uses DELETE journal mode (compatible with Azure File Share/SMB).
     """
     async with aiosqlite.connect(db_path, **_connect_kwargs(db_path)) as db:
-        await _set_journal_mode(db)
+        await db.execute("PRAGMA busy_timeout=5000")
+        await db.execute("PRAGMA journal_mode=DELETE")
         await db.execute("PRAGMA foreign_keys=ON")
         await db.execute("PRAGMA synchronous=NORMAL")
         await db.execute("PRAGMA cache_size=-64000")
@@ -77,8 +83,10 @@ async def run_migrations(db_path: str) -> list[str]:
     Runs all pending migrations in filename order. Idempotent.
     Returns list of migration filenames applied during this call.
     """
+    _cleanup_wal_files(db_path)
     async with aiosqlite.connect(db_path, **_connect_kwargs(db_path)) as db:
-        await _set_journal_mode(db)
+        await db.execute("PRAGMA busy_timeout=5000")
+        await db.execute("PRAGMA journal_mode=DELETE")
         await db.execute("PRAGMA foreign_keys=ON")
         db.row_factory = aiosqlite.Row
 
