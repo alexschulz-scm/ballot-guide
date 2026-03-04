@@ -43,11 +43,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Login to ACR
-        run: az acr login -n ${{ env.ACR_NAME }}
-
       - name: Set image tag
         run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)" >> $GITHUB_ENV
+
+      - name: Deploy infrastructure
+        run: |
+          az deployment group create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters/dev.bicepparam \
+            --parameters \
+              apiImageTag=${{ env.IMAGE_TAG }} \
+              webImageTag=${{ env.IMAGE_TAG }} \
+              anthropicApiKey=${{ secrets.ANTHROPIC_API_KEY }} \
+              googleCivicApiKey=${{ secrets.GOOGLE_CIVIC_API_KEY }} \
+              newsapiKey=${{ secrets.NEWSAPI_KEY }} \
+              openfecApiKey=${{ secrets.OPENFEC_API_KEY }}
+
+      - name: Login to ACR
+        run: az acr login -n ${{ env.ACR_NAME }}
 
       - name: Build and push API image
         run: |
@@ -65,19 +79,14 @@ jobs:
             .
           docker push ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-web --all-tags
 
-      - name: Deploy infrastructure
+      - name: Update container apps with new images
         run: |
-          az deployment group create \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --template-file infra/main.bicep \
-            --parameters infra/parameters/dev.bicepparam \
-            --parameters \
-              apiImageTag=${{ env.IMAGE_TAG }} \
-              webImageTag=${{ env.IMAGE_TAG }} \
-              anthropicApiKey=${{ secrets.ANTHROPIC_API_KEY }} \
-              googleCivicApiKey=${{ secrets.GOOGLE_CIVIC_API_KEY }} \
-              newsapiKey=${{ secrets.NEWSAPI_KEY }} \
-              openfecApiKey=${{ secrets.OPENFEC_API_KEY }}
+          az containerapp update \
+            -n ballot-guide-api -g ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-api:${{ env.IMAGE_TAG }}
+          az containerapp update \
+            -n ballot-guide-web -g ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-web:${{ env.IMAGE_TAG }}
 
       - name: Print deployment URLs
         run: |
