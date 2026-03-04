@@ -1,0 +1,68 @@
+{
+  "election": {
+    "id": "FL-2024-GEN",
+    "state": "FL",
+    "election_type": "general",
+    "election_date": "2024-11-05",
+    "name": "2024 Florida General Election",
+    "is_historical": 1
+  },
+  "races": [
+    {
+      "id": "FL-2024-PRES",
+      "election_id": "FL-2024-GEN",
+      "race_type": "president",
+      "title": "President of the United States",
+      "district": null
+    },
+    {
+      "id": "FL-2024-SEN",
+      "election_id": "FL-2024-GEN",
+      "race_type": "us_senate",
+      "title": "United States Senator",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A1",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 1 — Partisan School Board Elections",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A2",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 2 — Right to Hunt and Fish",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A3",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 3 — Marijuana Legalization",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A4",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 4 — Right to Abortion",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A5",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 5 — Homestead Property Tax Exemption",
+      "district": null
+    },
+    {
+      "id": "FL-2024-A6",
+      "election_id": "FL-2024-GEN",
+      "race_type": "constitutional_amendment",
+      "title": "Amendment 6 — Public Campaign Financing Repeal",
+      "district": null
+    }
+  ]
+}

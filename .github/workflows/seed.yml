@@ -1,0 +1,57 @@
+name: Seed Database
+
+on:
+  workflow_dispatch:
+    inputs:
+      elections:
+        description: "Which elections to seed"
+        required: true
+        type: choice
+        options:
+          - all
+          - "2022"
+          - "2024"
+          - "2026"
+
+env:
+  RESOURCE_GROUP: ballot-guide-rg
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Seed 2022 data
+        if: inputs.elections == 'all' || inputs.elections == '2022'
+        run: |
+          az containerapp exec \
+            -n ballot-guide-api \
+            -g ${{ env.RESOURCE_GROUP }} \
+            --command "python scripts/seed_historical.py --db /data/ballot-guide.db"
+
+      - name: Seed 2024 data
+        if: inputs.elections == 'all' || inputs.elections == '2024'
+        run: |
+          az containerapp exec \
+            -n ballot-guide-api \
+            -g ${{ env.RESOURCE_GROUP }} \
+            --command "python scripts/seed_2024.py --db /data/ballot-guide.db"
+
+      - name: Seed 2026 data
+        if: inputs.elections == 'all' || inputs.elections == '2026'
+        run: |
+          az containerapp exec \
+            -n ballot-guide-api \
+            -g ${{ env.RESOURCE_GROUP }} \
+            --command "python scripts/seed_2026.py --db /data/ballot-guide.db"
+
+      - name: Verify elections
+        run: |
+          az containerapp exec \
+            -n ballot-guide-api \
+            -g ${{ env.RESOURCE_GROUP }} \
+            --command "python -c \"import sqlite3; c=sqlite3.connect('/data/ballot-guide.db'); print([r[0] for r in c.execute('SELECT id FROM elections').fetchall()])\""

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "cand_trump_2024",
+    "race_id": "FL-2024-PRES",
+    "name": "Donald Trump",
+    "party": "Republican",
+    "bio": "Donald Trump served as the 45th President of the United States from 2017 to 2021. A businessman and media personality, he won the 2024 presidential election and became the 47th President. He is a resident of Palm Beach, Florida.",
+    "positions_json": "{\"economy\": \"Supports extending the 2017 Tax Cuts and Jobs Act, eliminating taxes on tips and overtime pay, and imposing universal tariffs on imports to protect American manufacturing.\", \"healthcare\": \"Opposes the Affordable Care Act but has pledged to protect coverage for pre-existing conditions. Supports price transparency in healthcare and reducing prescription drug costs.\", \"education\": \"Supports school choice, including vouchers and charter schools. Opposes federal education mandates and supports returning education authority to states and parents.\", \"public_safety\": \"Supports increased law enforcement funding, stricter immigration enforcement, and completion of a border wall. Opposes defunding police and supports qualified immunity.\", \"environment\": \"Supports expanding domestic oil, gas, and coal production. Withdrew the U.S. from the Paris Climate Agreement in his first term and pledged to do so again. Opposes the Green New Deal.\"}",
+    "funding_summary_json": "{\"total_raised\": 388000000, \"top_donors\": [{\"name\": \"Timothy Mellon\", \"amount\": 150000000, \"category\": \"individual\"}, {\"name\": \"Miriam Adelson\", \"amount\": 100000000, \"category\": \"individual\"}, {\"name\": \"Elon Musk\", \"amount\": 75000000, \"category\": \"individual\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Donald_Trump",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2024-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_harris_2024",
+    "race_id": "FL-2024-PRES",
+    "name": "Kamala Harris",
+    "party": "Democratic",
+    "bio": "Kamala Harris served as the 49th Vice President of the United States from 2021 to 2025. Previously she was a U.S. Senator from California (2017–2021) and California Attorney General (2011–2017). She became the Democratic nominee after President Biden withdrew from the race in July 2024.",
+    "positions_json": "{\"economy\": \"Supports raising the federal minimum wage to $15, expanding the Child Tax Credit, and providing first-time homebuyer down payment assistance of up to $25,000.\", \"healthcare\": \"Supports strengthening the Affordable Care Act, expanding Medicaid, and capping insulin costs at $35. Supports reproductive rights and access to contraception.\", \"education\": \"Supports universal pre-K, increased public school funding, and student loan relief. Opposes voucher programs that redirect public funds to private schools.\", \"public_safety\": \"Supports universal background checks for gun purchases, an assault weapons ban, and red flag laws. Supports community policing reforms while maintaining law enforcement funding.\", \"environment\": \"Supports the Inflation Reduction Act's clean energy investments, rejoining the Paris Climate Agreement, and achieving net-zero emissions by 2050. Opposes new fossil fuel leases on federal land.\"}",
+    "funding_summary_json": "{\"total_raised\": 997000000, \"top_donors\": [{\"name\": \"ActBlue small-dollar donors\", \"amount\": 500000000, \"category\": \"small_dollar\"}, {\"name\": \"Future Forward USA Action\", \"amount\": 65000000, \"category\": \"PAC\"}, {\"name\": \"Michael Bloomberg\", \"amount\": 50000000, \"category\": \"individual\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Kamala_Harris",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2024-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_scott_2024",
+    "race_id": "FL-2024-SEN",
+    "name": "Rick Scott",
+    "party": "Republican",
+    "bio": "Rick Scott has served as U.S. Senator from Florida since 2019. He previously served as Governor of Florida from 2011 to 2019. Before entering politics, he was CEO of Columbia/HCA, the largest private for-profit healthcare company in the United States.",
+    "positions_json": "{\"economy\": \"Supports cutting federal spending, reducing the national debt, and eliminating what he calls wasteful government programs. Authored an 11-point 'Rescue America' plan proposing all Americans pay some federal income tax.\", \"healthcare\": \"Supports repealing the Affordable Care Act and replacing it with a market-based system. Opposes government-run healthcare. Supports protecting Medicare and Social Security.\", \"education\": \"Supports school choice including vouchers and charter schools. As Governor, expanded the Florida Tax Credit Scholarship Program and signed legislation for the Gardiner Scholarship.\", \"public_safety\": \"Supports law enforcement and opposes defunding police. Supports stricter immigration enforcement, border security, and the death penalty for drug traffickers.\", \"environment\": \"As Governor, invested $4 billion in Everglades restoration but was criticized for restricting the use of the term 'climate change' in state agencies. Supports Florida-specific environmental projects.\"}",
+    "funding_summary_json": "{\"total_raised\": 42000000, \"top_donors\": [{\"name\": \"Senate Leadership Fund\", \"amount\": 8000000, \"category\": \"PAC\"}, {\"name\": \"Club for Growth\", \"amount\": 3000000, \"category\": \"PAC\"}, {\"name\": \"Rick Scott (self-funding)\", \"amount\": 12000000, \"category\": \"individual\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Rick_Scott",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2024-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_mucarsel_powell_2024",
+    "race_id": "FL-2024-SEN",
+    "name": "Debbie Mucarsel-Powell",
+    "party": "Democratic",
+    "bio": "Debbie Mucarsel-Powell represented Florida's 26th congressional district from 2019 to 2021. Born in Ecuador, she was the first South American-born immigrant elected to the U.S. Congress. Before entering politics, she worked in higher education and healthcare administration.",
+    "positions_json": "{\"economy\": \"Supports raising the minimum wage, expanding the Child Tax Credit, and investing in affordable housing. Opposes tax cuts for corporations and the wealthy.\", \"healthcare\": \"Supports protecting and expanding the Affordable Care Act, lowering prescription drug costs, and restoring reproductive rights. Opposes restrictions on abortion access.\", \"education\": \"Supports increased public school funding, universal pre-K, and student debt relief. Opposes voucher programs that divert public funds to private schools.\", \"public_safety\": \"Supports universal background checks, assault weapons ban, and red flag laws. Her father was murdered by gun violence in Ecuador, which she cites as motivation for gun safety advocacy.\", \"environment\": \"Supports strong environmental protections including clean energy investment, Everglades restoration funding, and addressing sea level rise affecting South Florida communities.\"}",
+    "funding_summary_json": "{\"total_raised\": 32000000, \"top_donors\": [{\"name\": \"Senate Majority PAC\", \"amount\": 5000000, \"category\": \"PAC\"}, {\"name\": \"EMILY's List\", \"amount\": 2000000, \"category\": \"PAC\"}, {\"name\": \"ActBlue small-dollar donors\", \"amount\": 8000000, \"category\": \"small_dollar\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Debbie_Mucarsel-Powell",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2024-12-01T00:00:00",
+    "data_completeness": "full"
+  }
+]

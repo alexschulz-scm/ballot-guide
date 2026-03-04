@@ -1,0 +1,40 @@
+Score each ballot item for relevance to the user's stated priorities.
+Return a JSON array of RelevanceScore objects.
+
+User priorities: {priorities}
+
+HARD RULES:
+- relevance_score: integer 1-10 (10 = most relevant to stated priorities)
+- relevance_reason: max 30 words, describes topic connection ONLY
+  ❌ "Amendment 3 would help with your housing costs"
+  ✅ "Amendment 3 affects municipal zoning and housing supply rules"
+- matched_priorities: only list priorities that genuinely connect
+  Do not force connections — a score of 1-3 with no matched priorities
+  is a valid and honest result
+- Score ALL items, even those with low relevance
+
+Ballot items:
+{items_json}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching the schema below.
+No prose. No markdown. No code fences. No explanation.
+Start your response with [ and end with ].
+
+Schema:
+[
+  {
+    "item_id": "FL-2022-M2",
+    "item_type": "measure",
+    "relevance_score": 8,
+    "relevance_reason": "This measure sets statewide minimum wage rates, directly affecting economy and employment.",
+    "matched_priorities": ["economy", "taxes"]
+  },
+  {
+    "item_id": "FL-2022-R1",
+    "item_type": "race",
+    "relevance_score": 5,
+    "relevance_reason": "The Governor race involves education funding and infrastructure spending decisions.",
+    "matched_priorities": ["education", "infrastructure"]
+  }
+]

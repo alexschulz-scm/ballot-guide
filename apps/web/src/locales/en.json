@@ -1,0 +1,67 @@
+{
+  "header": {
+    "title": "Ballot Guide",
+    "subtitle": "Understand your Florida ballot",
+    "election_label": "Election",
+    "historical_suffix": "(Historical)"
+  },
+  "chat": {
+    "welcome": "Hi — I'm here to help you understand your Florida ballot.",
+    "welcome_returning": "Welcome back. Your ballot guide from {date} is ready.",
+    "input_placeholder": "Type your zip code or address...",
+    "view_report_button": "View Full Ballot Guide →",
+    "priority_chips_prompt": "What topics matter most to you this election?",
+    "send_chips_button": "See My Ballot Guide",
+    "progress": {
+      "starting": "Getting started...",
+      "found_ballot": "Got it — looking up your ballot...",
+      "analyzing": "Found your ballot! Analyzing",
+      "analyzing_item": "Analyzing {title}",
+      "ranking": "Almost done — organizing by your priorities...",
+      "working": "Working..."
+    }
+  },
+  "report": {
+    "title": "Your Ballot Guide",
+    "back_to_chat": "← Back to Chat",
+    "print": "Print",
+    "generated_on": "Generated {date}",
+    "for_label": "For",
+    "against_label": "Against",
+    "yes_means": "If YES passes",
+    "no_means": "If NO wins",
+    "fiscal_impact": "Fiscal Impact",
+    "fiscal_not_published": "Fiscal impact not yet published.",
+    "no_position": "No public statement found on {topic}.",
+    "limited_data_title": "Limited information available",
+    "sources_label": "Sources"
+  },
+  "freshness": {
+    "stale_message": "Some ballot information has been updated since this guide was generated.",
+    "stale_button": "Refresh",
+    "very_stale_message": "This guide is more than 7 days old. Ballot information may have changed.",
+    "very_stale_button": "Get Updated Guide"
+  },
+  "shared_report": {
+    "disclaimer": "This guide was personalized for priorities: {priorities}. Your ballot items may differ if you live in a different district.",
+    "create_own": "Create your own personalized guide"
+  },
+  "errors": {
+    "ballot_not_found": "We couldn't find a ballot for that address. Please check your zip code.",
+    "out_of_state": "I'm currently set up for Florida elections only.",
+    "generic": "Something went wrong. Please try again.",
+    "retry": "Try again"
+  },
+  "priority_chips": {
+    "housing": "🏠 Housing & Rent",
+    "education": "🎓 Education & Schools",
+    "taxes": "💰 Taxes & Cost of Living",
+    "healthcare": "🏥 Healthcare",
+    "environment": "🌿 Environment & Climate",
+    "public_safety": "🚔 Public Safety & Crime",
+    "economy": "💼 Jobs & Economy",
+    "voting_rights": "🗳️ Voting & Elections",
+    "infrastructure": "🛣️ Infrastructure",
+    "senior_services": "👴 Senior Services"
+  }
+}

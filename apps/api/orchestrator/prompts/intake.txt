@@ -1,0 +1,33 @@
+Extract the voter's zip code and priorities from their message and the
+conversation history below.
+
+Return a JSON object matching IntakeResult exactly.
+
+Priorities must come from this list only:
+housing, education, taxes, healthcare, environment, public_safety,
+economy, voting_rights, infrastructure, senior_services
+
+If the user's free text doesn't map cleanly, pick the closest match.
+If you cannot extract a zip code, set needs_clarification: true and
+write a friendly question in clarification_question.
+
+Conversation history:
+{history}
+
+Latest message: {message}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching the schema below.
+No prose. No markdown. No code fences. No explanation.
+Start your response with { and end with }.
+
+Schema:
+{
+  "zip_code": "33101",
+  "address_full": "123 Main St, Miami FL 33101",
+  "priorities": ["housing", "education"],
+  "priorities_raw": "I care about housing and schools",
+  "display_name": "Alex",
+  "needs_clarification": false,
+  "clarification_question": null
+}

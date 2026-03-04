@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+apps/web/node_modules/
+apps/web/.next/
+.env
+.env.*
+!.env.example
+tests/
+docs/
+*.md
+!requirements.txt
+.git/
+.github/

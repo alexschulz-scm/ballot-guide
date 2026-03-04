@@ -1,0 +1,77 @@
+{
+  "miamiherald.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/miami-herald"
+  },
+  "sun-sentinel.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "orlandosentinel.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "tampabay.com": {
+    "bias_rating": "Lean Left",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/tampa-bay-times"
+  },
+  "palmbeachpost.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "jacksonville.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "tallahassee.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "floridapolitics.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": null
+  },
+  "politico.com": {
+    "bias_rating": "Lean Left",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/politico"
+  },
+  "foxnews.com": {
+    "bias_rating": "Lean Right",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/fox-news"
+  },
+  "cnn.com": {
+    "bias_rating": "Left",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/cnn"
+  },
+  "apnews.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/associated-press"
+  },
+  "reuters.com": {
+    "bias_rating": "Center",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/reuters"
+  },
+  "npr.org": {
+    "bias_rating": "Lean Left",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/npr"
+  },
+  "abcnews.go.com": {
+    "bias_rating": "Lean Left",
+    "bias_source": "AllSides",
+    "rating_url": "https://www.allsides.com/news-source/abc-news"
+  }
+}

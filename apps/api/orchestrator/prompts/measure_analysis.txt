@@ -1,0 +1,50 @@
+Analyze this Florida ballot measure and return a JSON object matching
+MeasureAnalysis exactly.
+
+HARD RULES:
+- plain_english_summary: max 150 words, no legal jargon, no opinion
+- what_yes_means: exactly what happens if YES wins (factual, max 50 words)
+- what_no_means: exactly what happens if NO wins (factual, max 50 words)
+- proponent_argument: strongest case FOR, from official sources
+- opponent_argument: strongest case AGAINST, from official sources
+- Both arguments must be similar length — do not favor either side
+- All sources in the sources list must have real URLs
+
+Measure data from sources:
+{measure_data}
+
+Legislation text (parsed sections):
+{legislation_sections}
+
+Recent news coverage:
+{news_articles}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching the schema below.
+No prose. No markdown. No code fences. No explanation.
+Start your response with { and end with }.
+
+Schema:
+{
+  "measure_id": "FL-2022-M2",
+  "short_title": "Amendment 2",
+  "plain_english_summary": "This measure would raise Florida's minimum wage...",
+  "what_yes_means": "The minimum wage increases to $15 per hour by 2026.",
+  "what_no_means": "The minimum wage remains at the federal baseline.",
+  "fiscal_impact": "Estimated $450M annual cost to state government.",
+  "fiscal_impact_source": "https://floridarevenue.com/fiscal-analysis",
+  "proponent_argument": "Raises wages for 2.5M workers above poverty level.",
+  "opponent_argument": "May reduce jobs as small businesses cut staff.",
+  "proponent_source": "https://dos.myflorida.com/elections/pro-argument",
+  "opponent_source": "https://dos.myflorida.com/elections/con-argument",
+  "topic_tags": ["economy", "taxes"],
+  "data_completeness": "full",
+  "sources": [
+    {
+      "name": "Florida Division of Elections",
+      "url": "https://dos.myflorida.com/elections/",
+      "bias_rating": null,
+      "fetched_at": "2026-01-01T00:00:00Z"
+    }
+  ]
+}

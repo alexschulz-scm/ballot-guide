@@ -1,0 +1,29 @@
+# Ballot Guide — Python dependencies
+# Install: pip install -r requirements.txt
+
+# Web framework
+fastapi>=0.128.0
+uvicorn[standard]>=0.30.0
+
+# Database
+aiosqlite>=0.20.0
+
+# Data validation / config
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+
+# HTTP client (used by MCP source clients)
+httpx>=0.27.0
+
+# AI / Claude SDK
+anthropic>=0.84.0
+
+# MCP protocol
+mcp>=1.0.0
+
+# PDF parsing (optional — legislation server)
+pdfplumber>=0.11.0
+
+# Testing (dev only)
+pytest>=8.0.0
+pytest-asyncio>=0.24.0

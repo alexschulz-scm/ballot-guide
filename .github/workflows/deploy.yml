@@ -1,0 +1,89 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: ballot-guide-rg
+  ACR_NAME: ballotguidedevacr
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          MOCK_EXTERNAL_APIS: "true"
+          MOCK_CLAUDE: "true"
+          ANTHROPIC_API_KEY: test-key
+          GOOGLE_CIVIC_API_KEY: test-key
+          NEWSAPI_KEY: test-key
+          OPENFEC_API_KEY: test-key
+        run: python -m pytest tests/ -v
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login -n ${{ env.ACR_NAME }}
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | head -c 7)" >> $GITHUB_ENV
+
+      - name: Build and push API image
+        run: |
+          docker build -f infra/Dockerfile \
+            -t ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-api:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-api:latest \
+            .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-api --all-tags
+
+      - name: Build and push Web image
+        run: |
+          docker build -f infra/web.Dockerfile \
+            -t ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-web:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-web:latest \
+            .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/ballot-guide-web --all-tags
+
+      - name: Deploy infrastructure
+        run: |
+          az deployment group create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters/dev.bicepparam \
+            --parameters \
+              apiImageTag=${{ env.IMAGE_TAG }} \
+              webImageTag=${{ env.IMAGE_TAG }} \
+              anthropicApiKey=${{ secrets.ANTHROPIC_API_KEY }} \
+              googleCivicApiKey=${{ secrets.GOOGLE_CIVIC_API_KEY }} \
+              newsapiKey=${{ secrets.NEWSAPI_KEY }} \
+              openfecApiKey=${{ secrets.OPENFEC_API_KEY }}
+
+      - name: Print deployment URLs
+        run: |
+          WEB_FQDN=$(az containerapp show -n ballot-guide-web -g ${{ env.RESOURCE_GROUP }} \
+            --query 'properties.configuration.ingress.fqdn' -o tsv)
+          echo "Web URL: https://$WEB_FQDN"
+          echo "### Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Web: https://$WEB_FQDN" >> $GITHUB_STEP_SUMMARY
+          echo "- Image tag: ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY

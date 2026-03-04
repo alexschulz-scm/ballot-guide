@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf8;
+  --foreground: #1a1a18;
+  --accent: #1b4fd8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-expand {
+    display: block !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #666;
+  }
+
+  .ballot-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  body {
+    font-size: 12pt;
+    background: white;
+    color: #1a1a18;
+  }
+
+  .ballot-card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+  }
+}

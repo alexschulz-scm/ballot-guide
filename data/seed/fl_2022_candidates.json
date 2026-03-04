@@ -1,0 +1,80 @@
+[
+  {
+    "id": "cand_desantis_2022",
+    "race_id": "FL-2022-GOV",
+    "name": "Ron DeSantis",
+    "party": "Republican",
+    "bio": "Ron DeSantis served as a U.S. Representative for Florida's 6th congressional district from 2013 to 2018 before being elected Governor in 2018. A Navy veteran and Harvard Law graduate, he was re-elected in 2022.",
+    "positions_json": "{\"education\": \"Opposes mask mandates and critical race theory in schools. Signed HB 1467 requiring curriculum transparency and parental review of instructional materials.\", \"economy\": \"Supports reducing business regulations and maintaining no state income tax. Opposed federal COVID-19 relief conditions tied to vaccine mandates.\", \"environment\": \"Signed legislation providing $638 million for Everglades restoration and $270 million to combat red tide; opposed federal climate regulations and withdrew Florida from RGGI discussions.\", \"public_safety\": \"Signed legislation increasing penalties for riot participation and expanding Stand Your Ground protections. Supported law enforcement funding increases.\", \"healthcare\": \"Opposed federal vaccine mandates and mask requirements. Supported expanding telehealth access. Opposed Medicaid expansion under the ACA.\"}",
+    "funding_summary_json": "{\"total_raised\": 218000000, \"top_donors\": [{\"name\": \"Florida GOP\", \"amount\": 5000000, \"category\": \"party\"}, {\"name\": \"Ken Griffin\", \"amount\": 5000000, \"category\": \"individual\"}, {\"name\": \"Steve Schwarzman\", \"amount\": 2500000, \"category\": \"individual\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Ron_DeSantis",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_crist_2022",
+    "race_id": "FL-2022-GOV",
+    "name": "Charlie Crist",
+    "party": "Democratic",
+    "bio": "Charlie Crist served as Florida Governor (2007–2011) as a Republican before becoming a Democrat. He represented Florida's 13th congressional district from 2013 to 2022. He challenged DeSantis in the 2022 gubernatorial race.",
+    "positions_json": "{\"education\": \"Supports fully funding public schools and expanding access to pre-K. Opposes state interference in local school curricula decisions.\", \"economy\": \"Supports raising the minimum wage and expanding unemployment benefits. Backed the American Rescue Plan.\", \"environment\": \"Supports rejoining the Paris Climate Agreement and transitioning Florida to clean energy. Opposes offshore drilling.\", \"public_safety\": \"Supports criminal justice reform and gun safety measures including universal background checks.\", \"healthcare\": \"Supports Medicaid expansion under the ACA to cover uninsured Floridians. Supports protecting coverage for pre-existing conditions.\"}",
+    "funding_summary_json": "{\"total_raised\": 30000000, \"top_donors\": [{\"name\": \"Florida Democratic Party\", \"amount\": 1500000, \"category\": \"party\"}, {\"name\": \"Service Employees International Union\", \"amount\": 500000, \"category\": \"union\"}, {\"name\": \"Emily's List\", \"amount\": 250000, \"category\": \"pac\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Charlie_Crist",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_rubio_2022",
+    "race_id": "FL-2022-SEN",
+    "name": "Marco Rubio",
+    "party": "Republican",
+    "bio": "Marco Rubio has served as U.S. Senator from Florida since 2011. A former Florida House Speaker, he won re-election in 2016 and 2022. He sits on the Senate Intelligence and Foreign Relations committees.",
+    "positions_json": "{\"economy\": \"Opposes tax increases and supports deregulation to grow small businesses. Authored legislation expanding the Child Tax Credit.\", \"healthcare\": \"Voted to repeal the ACA; supports patient-centered alternatives that preserve coverage for pre-existing conditions.\", \"education\": \"Supports school choice and charter schools. Opposes federal control of local education standards.\", \"public_safety\": \"Supports law enforcement funding and opposes defunding police. Backed criminal justice reform legislation.\", \"environment\": \"Supports investment in Florida-specific issues like Everglades restoration and sea level rise mitigation; skeptical of broad federal climate mandates.\"}",
+    "funding_summary_json": "{\"total_raised\": 46000000, \"top_donors\": [{\"name\": \"Club for Growth\", \"amount\": 1200000, \"category\": \"pac\"}, {\"name\": \"Senate Leadership Fund\", \"amount\": 5000000, \"category\": \"pac\"}, {\"name\": \"Citadel LLC employees\", \"amount\": 500000, \"category\": \"individual\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Marco_Rubio",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_demings_2022",
+    "race_id": "FL-2022-SEN",
+    "name": "Val Demings",
+    "party": "Democratic",
+    "bio": "Val Demings served as Chief of the Orlando Police Department (2007–2011) and represented Florida's 10th congressional district from 2017 to 2023. She served as an impeachment manager in the first Trump impeachment trial.",
+    "positions_json": "{\"public_safety\": \"Supports community policing, gun safety measures including universal background checks, and police accountability reforms. Drew on her law enforcement background to advocate for both public safety and civil rights.\", \"healthcare\": \"Supports expanding Medicaid, protecting the ACA, and lowering prescription drug costs. Backed the Inflation Reduction Act's Medicare drug negotiation provisions.\", \"economy\": \"Supports raising the federal minimum wage and expanding union rights. Backed the American Jobs Plan infrastructure investment.\", \"education\": \"Supports fully funding public schools, expanding access to higher education, and student loan relief.\", \"environment\": \"Supports the Inflation Reduction Act's clean energy investments. Backs rejoining international climate agreements.\"}",
+    "funding_summary_json": "{\"total_raised\": 74000000, \"top_donors\": [{\"name\": \"Senate Majority PAC\", \"amount\": 5000000, \"category\": \"pac\"}, {\"name\": \"EMILY's List\", \"amount\": 1000000, \"category\": \"pac\"}, {\"name\": \"ActBlue small-dollar donors\", \"amount\": 15000000, \"category\": \"small_dollar\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Val_Demings",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_moody_2022",
+    "race_id": "FL-2022-AG",
+    "name": "Ashley Moody",
+    "party": "Republican",
+    "bio": "Ashley Moody has served as Florida Attorney General since 2019. A former federal prosecutor and circuit court judge in Hillsborough County, she was re-elected in 2022.",
+    "positions_json": "{\"public_safety\": \"Led multi-state opioid litigation resulting in over $3 billion for Florida. Joined lawsuits against sanctuary city policies and federal immigration enforcement limitations.\", \"economy\": \"Led antitrust actions against major technology companies including Google and Facebook. Opposed federal regulatory overreach affecting Florida businesses.\", \"healthcare\": \"Joined multi-state lawsuit challenging the ACA individual mandate. Supported state-based opioid abatement funds for treatment programs.\"}",
+    "funding_summary_json": "{\"total_raised\": 8000000, \"top_donors\": [{\"name\": \"Republican Attorneys General Association\", \"amount\": 500000, \"category\": \"pac\"}, {\"name\": \"FL GOP\", \"amount\": 250000, \"category\": \"party\"}, {\"name\": \"Florida Chamber of Commerce PAC\", \"amount\": 200000, \"category\": \"pac\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Ashley_Moody",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  },
+  {
+    "id": "cand_uhlfelder_2022",
+    "race_id": "FL-2022-AG",
+    "name": "Daniel Uhlfelder",
+    "party": "Democratic",
+    "bio": "Daniel Uhlfelder is a Florida attorney known for public beach access advocacy. He gained national attention during the COVID-19 pandemic for appearing on beaches dressed as the Grim Reaper to protest the state's reopening policies.",
+    "positions_json": "{\"public_safety\": \"Supports criminal justice reform, police accountability, and independent oversight of law enforcement. Opposes prosecutorial overreach.\", \"environment\": \"Strong advocate for public beach access rights; supports robust enforcement of environmental laws protecting Florida's coastlines and waterways.\", \"voting_rights\": \"Supports expanding voting access, opposing gerrymandering, and ensuring election integrity through transparent nonpartisan administration.\"}",
+    "funding_summary_json": "{\"total_raised\": 1200000, \"top_donors\": [{\"name\": \"Florida Democratic Party\", \"amount\": 100000, \"category\": \"party\"}, {\"name\": \"ActBlue small-dollar donors\", \"amount\": 400000, \"category\": \"small_dollar\"}, {\"name\": \"Trial Lawyers PAC\", \"amount\": 75000, \"category\": \"pac\"}]}",
+    "ballotpedia_url": "https://ballotpedia.org/Daniel_Uhlfelder",
+    "fl_elections_url": "https://dos.myflorida.com/elections/candidates-committees/candidate-information/",
+    "fetched_at": "2022-12-01T00:00:00",
+    "data_completeness": "full"
+  }
+]

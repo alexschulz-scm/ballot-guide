@@ -1,0 +1,47 @@
+Analyze this Florida candidate and return a JSON object matching
+CandidateAnalysis exactly.
+
+HARD RULES:
+- bio_summary: factual only, max 75 words, no editorial language
+- positions: one factual sentence per topic, attributed to candidate statements
+- If a position is unknown, omit the topic key — do not invent positions
+- top_donors: top 3 by amount, formatted "Name ($Amount)"
+- All sources must have real URLs
+
+Focus positions on these user priority topics: {user_priorities}
+
+Candidate data:
+{candidate_data}
+
+Finance data:
+{finance_data}
+
+Recent news:
+{news_articles}
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching the schema below.
+No prose. No markdown. No code fences. No explanation.
+Start your response with { and end with }.
+
+Schema:
+{
+  "candidate_id": "C-FL-2022-GOV-01",
+  "name": "Jane Smith",
+  "party": "Democratic",
+  "bio_summary": "Jane Smith is a two-term state senator from Miami-Dade...",
+  "positions": {
+    "housing": "Smith supports expanding affordable housing tax credits.",
+    "education": "Smith has voted for increased per-pupil spending three times."
+  },
+  "top_donors": ["Ken Griffin ($5,000,000)", "Miami Realtors PAC ($250,000)"],
+  "funding_total": "$12.3M raised",
+  "sources": [
+    {
+      "name": "Ballotpedia",
+      "url": "https://ballotpedia.org/Jane_Smith",
+      "bias_rating": null,
+      "fetched_at": "2026-01-01T00:00:00Z"
+    }
+  ]
+}
