@@ -47,7 +47,7 @@ Internet (HTTPS)
 │                                                             │
 │  ┌───────────────────────┐                                  │
 │  │  Log Analytics        │                                  │
-│  │  7-day retention      │                                  │
+│  │  30-day retention     │                                  │
 │  └───────────────────────┘                                  │
 └─────────────────────────────────────────────────────────────┘
          ▲
@@ -381,7 +381,7 @@ Free-text priorities not matching a taxonomy key are preserved in `priorities_ra
 | **Google Civic API mocked** | Ballot lookup uses mock data | Set `MOCK_CIVIC_API=false` when ready |
 | **Florida only** | Other states rejected at intake | Architecture is state-agnostic; add state configs |
 | **English only** | i18n architecture exists but unused | Spanish + Haitian Creole planned for v2 |
-| **7-day log retention** | Limited debugging history | Increase for production |
+| **30-day log retention** | PerGB2018 SKU minimum | Increase for production |
 
 ---
 
@@ -391,8 +391,8 @@ Free-text priorities not matching a taxonomy key are preserved in `priorities_ra
 |----------|-----|----------------------|
 | Container Apps (2 containers, scale-to-zero) | Consumption | ~$0 (free tier) |
 | Container Registry | Basic | ~$5 |
-| Log Analytics (7-day retention) | Per-GB | ~$1-2 |
-| **Total** | | **~$6-7/month** |
+| Log Analytics (30-day retention) | Per-GB | ~$2-5 |
+| **Total** | | **~$7-10/month** |
 
 *Free tier: 180,000 vCPU-seconds + 360,000 GiB-seconds/month. At ~2 hours/day of active use, both containers stay within free tier. Costs increase with sustained traffic.*
 
