@@ -96,8 +96,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
       volumes: [
         {
           name: 'data-volume'
-          storageName: 'data-mount'
-          storageType: 'AzureFile'
+          storageType: 'EmptyDir'
         }
       ]
       scale: {
