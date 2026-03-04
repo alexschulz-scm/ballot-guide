@@ -28,30 +28,30 @@ jobs:
       - name: Seed 2022 data
         if: inputs.elections == 'all' || inputs.elections == '2022'
         run: |
-          az containerapp exec \
+          script -q -c 'az containerapp exec \
             -n ballot-guide-api \
             -g ${{ env.RESOURCE_GROUP }} \
-            --command "python scripts/seed_historical.py --db /data/ballot-guide.db"
+            --command "python scripts/seed_historical.py --db /data/ballot-guide.db"' /dev/null
 
       - name: Seed 2024 data
         if: inputs.elections == 'all' || inputs.elections == '2024'
         run: |
-          az containerapp exec \
+          script -q -c 'az containerapp exec \
             -n ballot-guide-api \
             -g ${{ env.RESOURCE_GROUP }} \
-            --command "python scripts/seed_2024.py --db /data/ballot-guide.db"
+            --command "python scripts/seed_2024.py --db /data/ballot-guide.db"' /dev/null
 
       - name: Seed 2026 data
         if: inputs.elections == 'all' || inputs.elections == '2026'
         run: |
-          az containerapp exec \
+          script -q -c 'az containerapp exec \
             -n ballot-guide-api \
             -g ${{ env.RESOURCE_GROUP }} \
-            --command "python scripts/seed_2026.py --db /data/ballot-guide.db"
+            --command "python scripts/seed_2026.py --db /data/ballot-guide.db"' /dev/null
 
       - name: Verify elections
         run: |
-          az containerapp exec \
+          script -q -c 'az containerapp exec \
             -n ballot-guide-api \
             -g ${{ env.RESOURCE_GROUP }} \
-            --command "python -c \"import sqlite3; c=sqlite3.connect('/data/ballot-guide.db'); print([r[0] for r in c.execute('SELECT id FROM elections').fetchall()])\""
+            --command "python -c \"import sqlite3; c=sqlite3.connect('"'"'/data/ballot-guide.db'"'"'); print([r[0] for r in c.execute('"'"'SELECT id FROM elections'"'"').fetchall()])\""' /dev/null
