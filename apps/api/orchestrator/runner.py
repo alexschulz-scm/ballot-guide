@@ -132,6 +132,10 @@ async def _resolve_ballot(session_id, zip_code, db_path):
     """Run ballot resolver. Returns dict with event/ballot/data_version, or ErrorEvent."""
     session = await get_session(session_id, db_path)
     pre_selected_election = session["ballot_id"] if session else None
+    logger.info(
+        "Ballot resolve: session=%s, zip=%s, pre_selected=%s",
+        session_id, zip_code, pre_selected_election,
+    )
     result = await run_ballot_resolver(session_id, zip_code, pre_selected_election, db_path)
     if isinstance(result, ErrorEvent):
         return result
