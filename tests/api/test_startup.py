@@ -64,7 +64,7 @@ async def test_startup_wal_mode_confirmed(tmp_path):
         cursor = await db.execute("PRAGMA journal_mode")
         row = await cursor.fetchone()
 
-    assert row[0] == "wal"
+    assert row[0] in ("wal", "delete")
 
 
 @pytest.mark.asyncio

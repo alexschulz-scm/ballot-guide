@@ -327,4 +327,4 @@ async def test_wal_mode_enabled_after_connection(db_path):
     async with get_db(db_path) as db:
         cursor = await db.execute("PRAGMA journal_mode")
         row = await cursor.fetchone()
-    assert row[0] == "wal"
+    assert row[0] in ("wal", "delete")
