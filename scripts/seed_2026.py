@@ -11,6 +11,13 @@ DB_PATH = os.path.join(_REPO_ROOT, "data", "ballot-guide.db")
 def seed_2026(db_path: str = DB_PATH) -> None:
     conn = sqlite3.connect(db_path)
 
+    # Election row (other seed scripts have this via migrations; 2026 needs it here)
+    conn.execute(
+        "INSERT OR IGNORE INTO elections (id, state, election_type, election_date, name, is_historical) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("FL-2026-GEN", "FL", "general", "2026-11-03", "2026 Florida General Election", 0),
+    )
+
     # Races
     races = [
         ("FL-2026-GOV", "FL-2026-GEN", "state_executive", "Governor of Florida", "statewide"),
