@@ -21,6 +21,14 @@ def _connect_kwargs(db_path: str) -> dict:
     return {}
 
 
+async def _set_journal_mode(db) -> None:
+    """Set WAL mode if supported, fall back to DELETE (Azure File Share/SMB)."""
+    try:
+        await db.execute("PRAGMA journal_mode=WAL")
+    except Exception:
+        await db.execute("PRAGMA journal_mode=DELETE")
+
+
 @contextlib.asynccontextmanager
 async def get_db(db_path: str):
     """
@@ -28,7 +36,7 @@ async def get_db(db_path: str):
     Sets WAL mode, enables foreign keys, and configures performance PRAGMAs.
     """
     async with aiosqlite.connect(db_path, **_connect_kwargs(db_path)) as db:
-        await db.execute("PRAGMA journal_mode=WAL")
+        await _set_journal_mode(db)
         await db.execute("PRAGMA foreign_keys=ON")
         await db.execute("PRAGMA synchronous=NORMAL")
         await db.execute("PRAGMA cache_size=-64000")
@@ -70,7 +78,7 @@ async def run_migrations(db_path: str) -> list[str]:
     Returns list of migration filenames applied during this call.
     """
     async with aiosqlite.connect(db_path, **_connect_kwargs(db_path)) as db:
-        await db.execute("PRAGMA journal_mode=WAL")
+        await _set_journal_mode(db)
         await db.execute("PRAGMA foreign_keys=ON")
         db.row_factory = aiosqlite.Row
 
