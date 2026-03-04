@@ -16,8 +16,16 @@ export default function ElectionSelector({ selectedId, onChange, disabled }: Pro
   const [elections, setElections] = useState<ElectionListItem[]>([]);
 
   useEffect(() => {
-    listElections().then(setElections).catch(() => {});
-  }, []);
+    listElections()
+      .then((list) => {
+        setElections(list);
+        // Auto-select first election if none selected
+        if (!selectedId && list.length > 0) {
+          onChange(list[0].id);
+        }
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (elections.length === 0) return null;
 
