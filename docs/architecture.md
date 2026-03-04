@@ -1,69 +1,256 @@
-# Ballot Guide — System Architecture
+# Ballot Guide — Architecture & Technical Decisions
 
-## Overview
-
-Ballot Guide is a multi-agent AI system with MCP (Model Context Protocol) servers that personalize ballot information to each voter's stated priorities. The system is built for Florida initially, designed to be state-agnostic by architecture.
-
-**Key decisions:**
-- Claude (Anthropic) as the sole LLM for MVP — native MCP support, best instruction-following for neutrality constraints
-- SQLite for MVP data layer — simple, portable, Azure File Share for persistence
-- MCP servers run in-process (stdio) inside the API container — no separate networked services for MVP
-- FastAPI (Python) backend, Next.js frontend
-- Azure Container Apps with scale-to-zero for hosting
+> Updated: 2026-03-04 — reflects what is actually deployed in the MVP.
 
 ---
 
-## System Diagram
+## Overview
+
+Ballot Guide is an AI-powered voter information tool for Florida. Users enter their address and priorities; the system returns a personalized, factual, source-cited summary of everything on their ballot. It never recommends how to vote.
+
+**Key architectural choices:**
+- Claude Sonnet (Anthropic) as the sole LLM — native MCP support, best instruction-following for neutrality constraints
+- SQLite with DELETE journal mode on ephemeral (EmptyDir) storage
+- MCP servers run as in-process Python imports inside the API container
+- FastAPI (Python) backend, Next.js (TypeScript) frontend
+- Azure Container Apps (Consumption plan) with internal/external ingress split
+
+---
+
+## Deployed System Diagram
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                     USER INTERFACE                       │
-│              Next.js Chat + Report View                  │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP / SSE
-┌──────────────────────▼──────────────────────────────────┐
-│                   API GATEWAY                            │
-│                FastAPI (Python)                          │
-│         /session  /chat  /report  /health               │
-└──────┬───────────────┬──────────────────────────────────┘
-       │               │
-       ▼               ▼
-┌──────────┐   ┌───────────────────────────────────────┐
-│ Session  │   │         AGENT ORCHESTRATOR             │
-│  Store   │   │     Claude tool-use loop               │
-│  SQLite  │   │                                        │
-└──────────┘   │  ┌─────────────┐  ┌────────────────┐  │
-               │  │Intake Agent │  │ Ballot Resolver│  │
-               │  └─────────────┘  └────────────────┘  │
-               │  ┌─────────────┐  ┌────────────────┐  │
-               │  │  Measure    │  │   Candidate    │  │
-               │  │  Analyst    │  │   Analyst      │  │
-               │  └─────────────┘  └────────────────┘  │
-               │  ┌─────────────────────────────────┐  │
-               │  │      Relevance Ranker            │  │
-               │  └─────────────────────────────────┘  │
-               └───────────────┬───────────────────────┘
-                               │ MCP protocol (stdio)
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-┌──────────────────┐  ┌────────────────┐  ┌───────────────┐
-│  ballot-data-mcp │  │legislation-mcp │  │  news-mcp     │
-│  ─────────────── │  │ ─────────────  │  │ ───────────── │
-│  Ballotpedia     │  │ FL Legislature │  │ NewsAPI       │
-│  Google Civic    │  │ PDF parser     │  │ AllSides bias │
-│  FL Div Elections│  │ State voter    │  │ metadata      │
-│  OpenSecrets     │  │ guide scraper  │  │               │
-└──────────────────┘  └────────────────┘  └───────────────┘
-          │                    │                    │
-          └────────────────────┼────────────────────┘
-                               ▼
-                    ┌─────────────────────┐
-                    │   SQLite + Azure    │
-                    │   File Share        │
-                    │   ballot-guide.db   │
-                    │   /cache (PDFs)     │
+Internet (HTTPS)
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Azure Container Apps Environment (Consumption plan)        │
+│  ballot-guide-dev-env  ·  eastus                            │
+│                                                             │
+│  ┌───────────────────────┐    ┌──────────────────────────┐  │
+│  │  ballot-guide-web     │    │  ballot-guide-api         │  │
+│  │  Next.js standalone   │───▶│  FastAPI + Claude agent   │  │
+│  │  node:20-alpine       │    │  python:3.11-slim         │  │
+│  │  Port 3000            │    │  Port 8000                │  │
+│  │  External ingress     │    │  Internal ingress only    │  │
+│  │  0.25 vCPU / 0.5 GB  │    │  0.25 vCPU / 0.5 GB      │  │
+│  │  Scale 0-2 replicas  │    │  Scale 0-3 replicas       │  │
+│  └───────────────────────┘    └────────────┬─────────────┘  │
+│                                            │                │
+│                                  ┌─────────▼──────────┐     │
+│                                  │  EmptyDir volume    │     │
+│                                  │  /data/ballot-      │     │
+│                                  │    guide.db         │     │
+│                                  │  SQLite (DELETE      │     │
+│                                  │   journal mode)     │     │
+│                                  └────────────────────┘     │
+│                                                             │
+│  ┌───────────────────────┐                                  │
+│  │  Log Analytics        │                                  │
+│  │  7-day retention      │                                  │
+│  └───────────────────────┘                                  │
+└─────────────────────────────────────────────────────────────┘
+         ▲
+         │ Images pulled from
+┌────────┴──────────────┐
+│  Azure Container      │
+│  Registry (Basic SKU) │
+│  ballotguidedevacr    │
+└───────────────────────┘
+         ▲
+         │ docker build + push
+┌────────┴──────────────┐
+│  GitHub Actions CI/CD │
+│  test → build → deploy│
+└───────────────────────┘
+```
+
+---
+
+## Request Flow
+
+```
+Browser
+  │ HTTPS
+  ▼
+ballot-guide-web (Next.js)
+  │ Internal HTTP rewrite: /api/v1/* → http://ballot-guide-api/api/v1/*
+  ▼
+ballot-guide-api (FastAPI)
+  │
+  ├── POST /api/v1/session                → create session
+  ├── POST /api/v1/session/{id}/message   → SSE stream
+  ├── GET  /api/v1/session/{id}/report    → structured JSON report
+  ├── GET  /api/v1/elections              → list elections
+  └── GET  /health                        → liveness check
+  │
+  ▼ (on /message)
+Orchestrator Runner (5 stages, sequential)
+  │
+  ├── Stage 1: Intake        → extract zip + priorities from conversation
+  ├── Stage 2: Ballot Resolve → match address to election ballot
+  ├── Stage 3: Analysis       → per-item measure/candidate analysis
+  ├── Stage 4: Ranking        → relevance-rank by user priorities
+  └── Stage 5: Report         → assemble final report (pure sync)
+  │
+  ├── Claude Sonnet (Anthropic API) — reasoning & summarization
+  │     Temperature: 0.1 (fixed)
+  │
+  ├── MCP: ballot_data → Google Civic API, OpenFEC API
+  ├── MCP: legislation → bill text parsing
+  └── MCP: news → NewsAPI
+  │
+  └── SQLite: sessions, elections, api_cache, reports, messages
+```
+
+The frontend is the **only public endpoint**. The API container has internal-only ingress — it's reachable within the Container Apps environment but not from the internet. No CORS needed since all browser requests go through the frontend proxy.
+
+---
+
+## Technical Decisions & Rationale
+
+### 1. EmptyDir Volume Instead of Azure File Share
+
+**What we tried:** Azure File Share (SMB) mounted at `/data` for SQLite persistence.
+
+**What happened:** Persistent `database is locked` errors in production. Azure File Share uses SMB protocol, which does not support the POSIX file locking that SQLite requires — even in single-writer mode.
+
+**What we did:** Switched to `EmptyDir` (ephemeral container-local storage). Data is lost on container restart, but:
+- Election data is seeded from scripts (reproducible in ~30s)
+- Session data is transient
+- The seed workflow (`seed.yml`) can re-populate via `az containerapp exec`
+
+**Future path:** Azure Container Apps disk mounts with proper POSIX locking, or migration to PostgreSQL when concurrent writes exceed SQLite's capacity.
+
+### 2. SQLite DELETE Journal Mode (Not WAL)
+
+**What we tried:** WAL mode (the default recommendation for concurrent read/write).
+
+**What happened:** WAL creates `-wal` and `-shm` sidecar files that need POSIX locking. Even after switching to EmptyDir, we standardized on DELETE mode for simplicity and compatibility.
+
+**Production PRAGMAs:**
+```sql
+PRAGMA busy_timeout = 5000;     -- 5s wait on lock contention
+PRAGMA journal_mode = DELETE;    -- no sidecar files
+PRAGMA foreign_keys = ON;
+PRAGMA synchronous = NORMAL;     -- balanced durability/speed
+PRAGMA cache_size = -64000;      -- 64 MB page cache
+PRAGMA temp_store = MEMORY;      -- temp tables in RAM
+```
+
+Stale WAL/SHM files are cleaned up in `_cleanup_wal_files()` before each connection open, as a safety net.
+
+### 3. Next.js Standalone Build with Build-Time API_URL
+
+**The constraint:** Next.js `rewrites()` in `next.config.ts` are evaluated at build time and baked into the server bundle. The API URL must be known during `npm run build`, not at container runtime.
+
+**Implementation:** The `web.Dockerfile` accepts `ARG API_URL=http://ballot-guide-api` and sets it as `ENV` before the build step. The internal Container Apps DNS name (`http://ballot-guide-api`) is the default.
+
+**Multi-stage build:**
+1. **deps** — `node:20-alpine`, `npm ci`
+2. **builder** — copy source, set `API_URL`, `npm run build`
+3. **runner** — copy only `.next/standalone` + `.next/static` + `public`, run `node server.js`
+
+Result: ~100 MB production image.
+
+### 4. ACR-First Deploy Order
+
+**The problem:** Bicep container app definitions reference specific image tags. If images don't exist in the registry when the container app is created, deployment fails with `MANIFEST_UNKNOWN`.
+
+**Solution:** The CI/CD pipeline:
+1. Ensure ACR exists (idempotent `az acr create`)
+2. `az acr login`
+3. Build and push both images (tagged with git SHA + `latest`)
+4. Deploy Bicep (which references the just-pushed images)
+
+### 5. MCP Servers as In-Process Python Imports
+
+MCP tool handlers are imported as regular Python functions — not run as separate stdio subprocesses.
+
+**Why:** Simpler deployment (single container), easier testing (monkeypatch imports), lower latency (no subprocess IPC). The MCP SDK's stdio transport is designed for editor integrations; in a server deployment, direct imports are more appropriate.
+
+### 6. Frontend Proxy (No Direct API Access)
+
+All `/api/v1/*` requests from the browser are rewritten by Next.js to the internal API. Benefits:
+- No CORS configuration needed (same-origin from browser perspective)
+- API keys never exposed to browser network tab
+- Single public endpoint simplifies firewall rules and DNS
+- Container Apps internal DNS handles service discovery automatically
+
+### 7. Scale-to-Zero with Auto-Seed
+
+Azure Container Apps Consumption plan with `minReplicas: 0` — containers scale to zero when idle, eliminating compute costs during inactive periods. The free tier (180,000 vCPU-seconds/month) covers ~200 hours of active use.
+
+**The blocker solved:** EmptyDir is wiped on scale-down, so the database starts empty on cold start. Solution: auto-seed at startup. The API lifespan manager runs migrations then calls the existing seed scripts (2022, 2024, 2026). All seed data is baked into the Docker image (`data/seed/` + `scripts/`). Total seed data: ~45KB, loads in <1s.
+
+**Cold start latency:** 15-30s (container pull + Python startup + migrations + seed). Acceptable for MVP.
+
+### 8. Election Auto-Selection
+
+The `ElectionSelector` component auto-selects the first election on page load. Without this, the `<select>` element visually shows the first option but never fires `onChange`, creating sessions with `ballot_id=NULL` — which causes "No upcoming FL election found" errors downstream.
+
+---
+
+## Infrastructure as Code (Bicep)
+
+```
+infra/
+├── main.bicep                    # Root orchestrator — wires all modules
+├── Dockerfile                    # API container (python:3.11-slim)
+├── web.Dockerfile                # Web container (node:20-alpine, multi-stage)
+├── modules/
+│   ├── registry.bicep            # ACR (Basic SKU, admin enabled)
+│   ├── environment.bicep         # Container Apps Environment + Log Analytics
+│   ├── api.bicep                 # API container app (internal, scale 0-3)
+│   └── web.bicep                 # Web container app (external, scale 0-2)
+└── parameters/
+    └── dev.bicepparam            # Dev environment parameter values
+```
+
+**Module dependency order:** registry → environment → api + web (parallel)
+
+**Secrets:** Passed as `@secure()` Bicep parameters via CLI `--parameters` flags, stored as GitHub Actions secrets, injected as Container Apps secrets (not env vars).
+
+---
+
+## CI/CD Pipeline
+
+### `deploy.yml` — Build & Deploy
+
+**Triggers:** Push to `main`, manual `workflow_dispatch`
+
+```
+┌──────────┐        ┌─────────────────────┐
+│  test     │───────▶│  build-and-deploy    │
+│  pytest   │        │                     │
+│  (mocked) │        │  1. az login        │
+└──────────┘        │  2. Ensure ACR      │
+                    │  3. Build & push    │
+                    │     API + Web imgs  │
+                    │  4. Deploy Bicep    │
+                    │  5. Print URLs      │
                     └─────────────────────┘
 ```
+
+- **Test job:** `pytest tests/ -v` with `MOCK_EXTERNAL_APIS=true MOCK_CLAUDE=true`
+- **Image tags:** `{git-sha-7-chars}` + `latest`
+- **Auth:** Azure service principal (`AZURE_CREDENTIALS` secret)
+
+### `seed.yml` — Database Seeding (Manual Override)
+
+**Trigger:** Manual `workflow_dispatch` with election selector (all / 2022 / 2024 / 2026)
+
+Runs seed scripts inside the running API container via `az containerapp exec`. With auto-seed on startup, this workflow is only needed for manual re-seeding or adding new election data.
+
+### Required GitHub Secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `AZURE_CREDENTIALS` | Service principal JSON (clientId, clientSecret, subscriptionId, tenantId) |
+| `ANTHROPIC_API_KEY` | Claude API access |
+| `GOOGLE_CIVIC_API_KEY` | Google Civic Information API |
+| `NEWSAPI_KEY` | News search |
+| `OPENFEC_API_KEY` | Campaign finance data |
 
 ---
 
@@ -71,354 +258,175 @@ Ballot Guide is a multi-agent AI system with MCP (Model Context Protocol) server
 
 ### Frontend — Next.js
 
-**Chat View** (`/`)
-Conversational intake. User enters zip code and describes priorities in natural language. Responses stream via SSE. Primary UX for MVP.
+| Route | Purpose |
+|-------|---------|
+| `/` | Chat interface — conversational intake + SSE streaming |
+| `/report/[session-id]` | Structured, printable ballot guide |
 
-**Report View** (`/report/[session-id]`)
-Structured, printable ballot guide. One section per race/measure sorted by relevance to user priorities. Each section contains: plain-English summary, fiscal impact, proponent argument, opponent argument, funding sources, source links.
+- All user-facing strings via `t()` from `lib/i18n.ts` (no hardcoded text)
+- All API calls centralized in `lib/api.ts` (no `fetch` in components)
+- SSE parsing isolated in `useSSEStream` hook
+- Session state in `useSession` hook (localStorage for session ID and election ID)
+- Report items displayed in API-provided relevance order (no re-sorting)
 
-Session ID stored in localStorage. All state lives server-side in SQLite.
+### Backend — FastAPI
 
-### API Gateway — FastAPI
+Thin routing layer. Validates input, delegates to store/orchestrator, formats response.
 
-Thin routing layer. Handles anonymous sessions (UUID), routes to orchestrator, streams responses.
-
-```
-POST /session              → create session, return session_id
-POST /session/{id}/message → send user message, stream agent response (SSE)
-GET  /session/{id}/report  → return structured ballot guide JSON
-GET  /health               → liveness check
-```
+- `aiosqlite` for all async database access (never synchronous `sqlite3`)
+- Migrations + auto-seed run at startup only (never in request handlers)
+- All SSE responses include `X-Accel-Buffering: no` header
+- `done` event is always the last SSE event (via `finally` block)
+- Session status transitions enforced in `update_session_status`
 
 ### Agent Orchestrator
 
-Claude's native tool-use loop. MCP servers registered as tools. Sequential execution for MVP (simpler to debug than parallel).
+Sequential 5-stage pipeline in `runner.py`:
 
-**Orchestration flow:**
-1. Intake → extract zip + priorities from conversation
-2. Ballot Resolve → get exact ballot for that address
-3. For each ballot item → fetch data, legislation text, news → generate neutral summary
-4. Rank by relevance to user priorities
-5. Assemble report
+1. **Intake** — extract zip code + priorities from user message
+2. **Ballot Resolver** — match zip to election ballot (uses pre-selected election from session)
+3. **Analysis** — per-item measure and candidate analysis via MCP tools + Claude
+4. **Relevance Ranking** — score items by alignment with user priorities
+5. **Report Assembly** — pure sync function, no Claude/MCP calls
 
-**Neutrality contract** is enforced via shared system prompt across all agents. See `neutrality-contract.md`.
+Rules:
+- Stages never call each other — only `runner.py` sequences them
+- All Claude calls go through `claude_client.py` (centralized)
+- Prompts live in `.txt` files under `apps/api/orchestrator/prompts/`
+- Temperature: 0.1 (fixed, not configurable)
+- Follow-up mode: if session already has a report, subsequent messages get conversational answers
 
-### MCP Servers (3 for MVP, in-process stdio)
+### MCP Servers (3, in-process)
 
-#### `ballot-data-mcp`
-- `get_ballot_by_address(address)` — Google Civic Information API → races + measures for precinct
-- `get_measure_detail(measure_id)` — Ballotpedia API → full measure profile
-- `get_candidate_detail(candidate_id)` — Ballotpedia + FL Division of Elections → bio, positions
-- `get_campaign_finance(candidate_id)` — OpenSecrets + FL EFIS → funding sources
+| Server | Tools | External APIs |
+|--------|-------|---------------|
+| `ballot_data` | get_ballot, get_candidates, get_measures, get_finance | Google Civic, OpenFEC, FL Division of Elections |
+| `legislation` | get_measure_text, parse_measure_text | FL Legislature portal |
+| `news` | search_news, get_source_bias | NewsAPI, AllSides |
 
-#### `legislation-mcp`
-- `get_measure_text(measure_id, state)` — FL Legislature portal or official voter guide PDF
-- `parse_measure_text(raw_text)` — structures legal text into sections (findings, provisions, fiscal impact)
-- Results cached in SQLite — legal text is immutable once filed
-
-#### `news-mcp`
-- `search_news(query, date_range)` — NewsAPI
-- `get_source_bias(domain)` — AllSides/Ad Fontes rating
-- Returns articles labeled by source lean; no editorial synthesis
+All external calls check `api_cache` in SQLite first. No LLM calls inside MCP servers.
 
 ---
 
 ## Data Layer — SQLite
 
-### Schema
+### Key Tables
 
-```sql
-CREATE TABLE elections (
-    id TEXT PRIMARY KEY,            -- "FL-2022-GEN", "FL-2026-GEN"
-    state TEXT NOT NULL,
-    election_type TEXT,             -- "general", "primary"
-    election_date TEXT NOT NULL,
-    is_historical INTEGER DEFAULT 0
-);
+| Table | Purpose |
+|-------|---------|
+| `elections` | Election records (FL-2024-GEN, etc.) with `is_historical` flag |
+| `races` | Races within elections (governor, senate, amendments) |
+| `candidates` | Candidate profiles, positions, funding |
+| `measures` | Ballot measures with pro/con arguments, fiscal impact |
+| `sessions` | User sessions with zip, priorities, ballot_id, report |
+| `messages` | Conversation history per session |
+| `api_cache` | Cached external API responses with TTL |
+| `_migrations` | Applied migration filenames (idempotency tracking) |
 
-CREATE TABLE races (
-    id TEXT PRIMARY KEY,            -- "FL-2022-GOV"
-    election_id TEXT REFERENCES elections(id),
-    race_type TEXT,                 -- "governor", "senate", "amendment"
-    title TEXT NOT NULL,
-    district TEXT
-);
+### Migration System
 
-CREATE TABLE candidates (
-    id TEXT PRIMARY KEY,
-    race_id TEXT REFERENCES races(id),
-    name TEXT NOT NULL,
-    party TEXT,
-    bio TEXT,
-    positions_json TEXT,            -- JSON: {topic: position}
-    funding_summary_json TEXT,
-    ballotpedia_url TEXT,
-    fetched_at TEXT
-);
-
-CREATE TABLE measures (
-    id TEXT PRIMARY KEY,            -- "FL-2022-A2"
-    race_id TEXT REFERENCES races(id),
-    short_title TEXT NOT NULL,
-    full_title TEXT,
-    measure_text TEXT,
-    plain_summary TEXT,             -- LLM-generated, cached
-    fiscal_impact TEXT,
-    proponent_argument TEXT,
-    opponent_argument TEXT,
-    passed INTEGER,                 -- NULL=upcoming, 1/0=historical
-    yes_pct REAL,
-    no_pct REAL,
-    sources_json TEXT,
-    fetched_at TEXT
-);
-
-CREATE TABLE sessions (
-    id TEXT PRIMARY KEY,
-    created_at TEXT DEFAULT (datetime('now')),
-    display_name TEXT,              -- optional, user-provided name
-    zip_code TEXT,
-    address TEXT,
-    language TEXT DEFAULT 'en',     -- i18n: 'en', 'es'. MVP always 'en'
-    detected_language TEXT,         -- from Accept-Language header, logged for v2
-    priorities_raw TEXT,            -- original free-text input preserved
-    priorities_json TEXT,           -- normalized: ["housing", "education", "taxes"]
-    ballot_id TEXT REFERENCES elections(id),
-    report_json TEXT,
-    report_language TEXT DEFAULT 'en',
-    data_version TEXT,              -- hash of ballot data at report generation time
-    updated_at TEXT
-);
-
-CREATE TABLE messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT REFERENCES sessions(id),
-    role TEXT,                      -- "user" | "assistant"
-    content TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-);
-
-CREATE TABLE api_cache (
-    cache_key TEXT PRIMARY KEY,
-    source TEXT,
-    data_json TEXT,
-    fetched_at TEXT,
-    expires_at TEXT
-);
-```
-
-### SQLite Configuration
-- WAL mode enabled on startup for concurrent reads
-- Azure File Share mount at `/data/` for persistence across scale-to-zero restarts
-- Litestream replication to Azure Blob Storage for backup (v2)
+- SQL files in `apps/api/db/migrations/`, applied in alphabetical order at startup
+- Each migration wrapped in transaction with rollback on error
+- Idempotent: checks `_migrations` table before applying
 
 ---
 
 ## Neutrality Architecture
 
-### Structural (enforced in code)
+### Structural Enforcement (in code)
 
-Output schemas have no recommendation field. The LLM fills templates — it cannot add fields that don't exist.
+Output schemas have no recommendation field. The LLM fills constrained Pydantic models — it cannot add fields that don't exist.
 
-```python
-class MeasureSummary(BaseModel):
-    plain_english_summary: str
-    fiscal_impact: str
-    proponent_argument: str
-    opponent_argument: str
-    relevance_to_priorities: str    # why this matches user's topics, not a recommendation
-    sources: list[SourceCitation]
-    # NO: recommendation, lean, suggested_vote
-```
+**Forbidden output fields** (any schema, any file):
+`recommendation`, `suggested_vote`, `lean`, `preferred_candidate`, `vote_for`
 
-### Prompt (defense in depth)
+**Forbidden relevance_reason phrases:**
+"help you", "benefit you", "support your goal", "align with your values", "better for you", "improve your"
 
-Shared system prompt for all agents explicitly prohibits recommendations, requires both-sides treatment, and mandates source citation. See `neutrality-contract.md`.
+### Prompt Enforcement (defense in depth)
 
-### Source labeling (transparency)
+Shared system prompt prohibits recommendations, requires both-sides treatment, mandates source citation. See `docs/neutrality-contract.md`.
 
-Every source citation includes AllSides bias rating. System fetches from sources across the spectrum and labels them visibly.
+### Display Rules
 
----
-
-## Florida-Specific Data Sources
-
-| Source | Data | Format | Access |
-|--------|------|--------|--------|
-| FL Division of Elections | Candidates, results, filings | CSV, API | Free, public |
-| Ballotpedia | Measures, candidate profiles | API (requires request) | Free non-commercial |
-| FL Legislature (flsenate.gov) | Full measure text | HTML, PDF | Free, public |
-| FL EFIS | State campaign finance | CSV, search | Free, public |
-| OpenSecrets | Federal campaign finance | API | Free non-commercial |
-| Google Civic Information | Address → ballot | API | Free, generous quota |
-| NewsAPI | Recent coverage | API | 100 req/day free tier |
-
-### Historical Test Data — FL 2022 General Election
-
-Used for development and testing without live election data.
-
-**Ballot measures:** 4 constitutional amendments (Amendment 1 school funding, Amendment 2 minimum wage, Amendment 3 marijuana, Amendment 4 voting restoration) — full text, fiscal analyses, certified results available.
-
-**Major races:** Governor (DeSantis vs. Crist), U.S. Senate (Rubio vs. Demings), Attorney General — well-documented candidate profiles, position records, finance data.
-
-Seed data stored in `data/seed/` and loaded via `scripts/seed_historical.py`.
-
----
-
-## Infrastructure — Azure Container Apps
-
-```
-Azure Container Apps Environment
-├── web (Next.js)          scale: min=0, max=3
-├── api (FastAPI + MCPs)   scale: min=0, max=3
-└── Azure File Share
-    ├── /data/ballot-guide.db
-    └── /data/cache/
-```
-
-MCP servers run as in-process stdio within the API container for MVP. Extract to separate containers in v2 if independent scaling is needed.
-
-**Local development:** Docker Compose with the same file structure, SQLite on local filesystem.
-
----
-
-## Repository Structure
-
-```
-ballot-guide/
-├── apps/
-│   ├── web/                        # Next.js frontend
-│   │   ├── app/
-│   │   │   ├── page.tsx            # Chat view
-│   │   │   └── report/[id]/        # Report view
-│   │   └── components/
-│   │       ├── ChatInterface.tsx
-│   │       ├── BallotReport.tsx
-│   │       └── PriorityPicker.tsx
-│   └── api/                        # FastAPI backend
-│       ├── main.py
-│       ├── orchestrator/
-│       │   ├── agents.py
-│       │   ├── prompts.py
-│       │   └── schemas.py
-│       ├── session/
-│       └── db/
-│           ├── migrations/
-│           └── models.py
-├── mcp-servers/
-│   ├── ballot_data/
-│   │   ├── server.py
-│   │   └── sources/
-│   │       ├── civic.py
-│   │       ├── ballotpedia.py
-│   │       ├── florida_elections.py
-│   │       └── opensecrets.py
-│   ├── legislation/
-│   │   ├── server.py
-│   │   └── parsers/
-│   │       ├── pdf_parser.py
-│   │       └── fl_legislature.py
-│   └── news/
-│       ├── server.py
-│       └── bias_ratings.py
-├── data/
-│   ├── seed/
-│   │   ├── fl_2022_ballot.json
-│   │   ├── fl_2022_measures.json
-│   │   └── fl_2022_candidates.json
-│   └── .gitkeep
-├── scripts/
-│   ├── seed_historical.py
-│   └── fetch_fl_elections.py
-├── infra/
-│   ├── docker-compose.yml
-│   ├── Dockerfile.api
-│   ├── Dockerfile.web
-│   └── azure/
-│       ├── container-app.bicep
-│       └── file-share.bicep
-├── docs/
-│   ├── vision.md
-│   ├── architecture.md
-│   ├── neutrality-contract.md
-│   ├── florida-data-sources.md
-│   ├── user-flows.md               # next
-│   └── testing-with-fl-2022.md
-└── CLAUDE.md
-```
-
----
-
+- Labels are "For" and "Against" — never "Support"/"Oppose" or "Yes side"/"No side"
+- `proponent_argument` and `opponent_argument` always render as a pair
+- Missing candidate positions render explicit text — never silently omitted
+- No red/blue partisan color scheme — civic palette only
 
 ---
 
 ## Topic Taxonomy
 
-The internal topic taxonomy drives relevance ranking. All user inputs — whether from conversation starter chips or free text — are normalized to these keys by the intake agent.
+The canonical list of priority topics. Only these values are valid in `topic_tags` and `priorities_json`:
 
-| Key | Display Label | Conversation Starter Chip |
-|-----|--------------|--------------------------|
-| `housing` | Housing & Rent | 🏠 Housing & Rent |
-| `education` | Education & Schools | 🎓 Education & Schools |
-| `taxes` | Taxes & Cost of Living | 💰 Taxes & Cost of Living |
-| `healthcare` | Healthcare | 🏥 Healthcare |
-| `environment` | Environment & Climate | 🌿 Environment & Climate |
-| `public_safety` | Public Safety & Crime | 🚔 Public Safety & Crime |
-| `economy` | Jobs & Economy | 💼 Jobs & Economy |
-| `voting_rights` | Voting & Elections | 🗳️ Voting & Elections |
-| `infrastructure` | Infrastructure & Transportation | 🛣️ Infrastructure |
-| `senior_services` | Senior Services & Medicare | 👴 Senior Services |
+```
+housing, education, taxes, healthcare, environment,
+public_safety, economy, voting_rights, infrastructure, senior_services
+```
 
-Free-text priorities not matching a taxonomy key are preserved in `priorities_raw` and Claude maps them to the closest key(s) at intake. If no mapping is possible, the free-text term is kept as a custom priority and used verbatim in the relevance ranker prompt.
+Free-text priorities not matching a taxonomy key are preserved in `priorities_raw` and mapped to the closest key(s) at intake. Unmappable terms are kept as custom priorities.
 
 ---
 
-## Internationalization (i18n)
+## Known Limitations (MVP)
 
-Architecture supports multi-language from day one. English only in MVP.
-
-**UI strings:** All text externalized to `/locales/{lang}.json`. No hardcoded strings in components.
-
-**URL structure:** `/` for English (MVP). `/es/` prefix reserved for Spanish (v2).
-
-**LLM-generated content:** Summaries generated in the session language directly — not translated post-hoc. Cached per language in `api_cache` with language suffix in cache key.
-
-**Language detection:** `Accept-Language` header captured into `sessions.detected_language` at session creation. Not acted on in MVP — logged for v2 planning.
-
-**Priority languages for v2:** Spanish, then Haitian Creole (significant Florida demographics).
-
-## LLM Strategy
-
-| Role | Model | Rationale |
-|------|-------|-----------|
-| Agent orchestration | Claude Sonnet 4.5 | Native MCP, best instruction-following |
-| Measure/candidate summaries | Claude Sonnet 4.5 | Neutrality constraints need smart model |
-| PDF/legal text extraction | Claude Sonnet 4.5 (MVP) / Gemini 2.0 Flash (v2 cost optimization) | 200K context handles FL voter guides |
-| Embeddings | OpenAI text-embedding-3-small | Simple, cheap, good enough |
-
-Claude Opus used only if Sonnet hallucinates on complex multi-measure ballots. Claude Haiku not used — neutrality constraints require a smarter model.
+| Limitation | Impact | Mitigation |
+|------------|--------|------------|
+| **Ephemeral storage** | Database lost on scale-to-zero | Auto-seed on startup recreates all data in <1s |
+| **Cold start latency** | 15-30s on first request after idle | Acceptable for MVP; add warm-up ping if needed |
+| **Session data lost on scale-down** | Active sessions expire when containers idle | Sessions are transient; users restart naturally |
+| **No custom domain** | `*.azurecontainerapps.io` URL | Add custom domain + cert for public launch |
+| **No CDN** | Static assets served from container | Add Azure Front Door when traffic warrants |
+| **Google Civic API mocked** | Ballot lookup uses mock data | Set `MOCK_CIVIC_API=false` when ready |
+| **Florida only** | Other states rejected at intake | Architecture is state-agnostic; add state configs |
+| **English only** | i18n architecture exists but unused | Spanish + Haitian Creole planned for v2 |
+| **7-day log retention** | Limited debugging history | Increase for production |
 
 ---
 
-## External API Keys Required
+## Cost Estimate (MVP, minimal traffic)
 
-| Service | Purpose | Free Tier |
-|---------|---------|-----------|
-| Anthropic | Claude agent | Pay per token |
-| Google Civic Information | Address → ballot | Yes, generous |
-| Ballotpedia | Measure + candidate data | Requires approval request |
-| NewsAPI | Recent coverage | 100 req/day |
-| OpenSecrets | Campaign finance | Free non-commercial |
+| Resource | SKU | Estimated Monthly Cost |
+|----------|-----|----------------------|
+| Container Apps (2 containers, scale-to-zero) | Consumption | ~$0 (free tier) |
+| Container Registry | Basic | ~$5 |
+| Log Analytics (7-day retention) | Per-GB | ~$1-2 |
+| **Total** | | **~$6-7/month** |
+
+*Free tier: 180,000 vCPU-seconds + 360,000 GiB-seconds/month. At ~2 hours/day of active use, both containers stay within free tier. Costs increase with sustained traffic.*
 
 ---
 
-## Migration Path (SQLite → PostgreSQL)
+## Local Development
 
-When concurrent writes become a bottleneck (typically >50 concurrent users writing):
-1. Schema is identical — no changes needed
-2. Swap `aiosqlite` driver for `asyncpg`
-3. Update connection string in environment config
-4. Provision Azure Database for PostgreSQL Flexible Server
-5. Run one-time data migration script
+```bash
+# Full stack with Docker Compose
+docker compose up
 
-Estimated effort: 1 day.
+# Or individually:
+# API (port 8001)
+cd apps/api && uvicorn apps.api.main:app --port 8001
+
+# Web (port 3000, proxies /api/v1/* to localhost:8001)
+cd apps/web && npm run dev
+```
+
+Environment variables loaded from `.env` at project root. See `.env.example` for required values.
+
+---
+
+## Production Readiness Checklist
+
+Before public launch, update:
+- [ ] `MOCK_CIVIC_API` → `false`
+- [ ] `CORS_ORIGINS` → production domain(s)
+- [ ] ACR SKU → Standard (geo-replication)
+- [ ] Log retention → 90+ days
+- [ ] Container resources → increase CPU/RAM based on load testing
+- [ ] Max replicas → enable autoscaling (2-5 replicas)
+- [ ] Custom domain + TLS certificate
+- [ ] Service principal → migrate to managed identity
+- [ ] Persistent storage → Azure Disk mount or PostgreSQL migration
+- [ ] Add application monitoring (Application Insights)
+- [ ] Rotate service principal credentials

@@ -1,10 +1,6 @@
 // Container Apps Environment — Consumption plan with Log Analytics
 param location string
 param envName string
-param storageAccountName string
-@secure()
-param storageAccountKey string
-param storageShareName string
 
 var environmentName = 'ballot-guide-${envName}-env'
 
@@ -15,7 +11,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
     sku: {
       name: 'PerGB2018'
     }
-    retentionInDays: 30
+    retentionInDays: 7
   }
 }
 
@@ -29,19 +25,6 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
         customerId: logAnalytics.properties.customerId
         sharedKey: logAnalytics.listKeys().primarySharedKey
       }
-    }
-  }
-}
-
-resource storageMount 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
-  parent: environment
-  name: 'data-mount'
-  properties: {
-    azureFile: {
-      accountName: storageAccountName
-      accountKey: storageAccountKey
-      shareName: storageShareName
-      accessMode: 'ReadWrite'
     }
   }
 }

@@ -43,11 +43,41 @@ resource webApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'API_URL', value: 'http://${apiInternalFqdn}' }
             { name: 'HOSTNAME', value: '0.0.0.0' }
           ]
+          probes: [
+            {
+              type: 'Startup'
+              httpGet: {
+                port: 3000
+                path: '/'
+              }
+              periodSeconds: 5
+              failureThreshold: 12
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                port: 3000
+                path: '/'
+              }
+              periodSeconds: 30
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        minReplicas: 0
+        maxReplicas: 2
+        rules: [
+          {
+            name: 'http-scaler'
+            http: {
+              metadata: {
+                concurrentRequests: '10'
+              }
+            }
+          }
+        ]
       }
     }
   }

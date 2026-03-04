@@ -1,6 +1,6 @@
 // Ballot Guide — Azure Container Apps deployment
 // Deploy: az deployment group create -g ballot-guide-rg -f infra/main.bicep
-//         --parameters infra/parameters/dev.bicepparam
+//         --parameters envName=dev location=eastus
 //         --parameters anthropicApiKey=<val> googleCivicApiKey=<val> ...
 
 targetScope = 'resourceGroup'
@@ -30,22 +30,11 @@ module registry 'modules/registry.bicep' = {
   }
 }
 
-module storage 'modules/storage.bicep' = {
-  name: 'storage'
-  params: {
-    location: location
-    envName: envName
-  }
-}
-
 module environment 'modules/environment.bicep' = {
   name: 'environment'
   params: {
     location: location
     envName: envName
-    storageAccountName: storage.outputs.accountName
-    storageAccountKey: storage.outputs.accountKey
-    storageShareName: storage.outputs.shareName
   }
 }
 

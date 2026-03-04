@@ -87,8 +87,8 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
                 port: 8000
                 path: '/health'
               }
-              periodSeconds: 5
-              failureThreshold: 10
+              periodSeconds: 10
+              failureThreshold: 12
             }
           ]
         }
@@ -100,8 +100,18 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        minReplicas: 0
+        maxReplicas: 3
+        rules: [
+          {
+            name: 'http-scaler'
+            http: {
+              metadata: {
+                concurrentRequests: '10'
+              }
+            }
+          }
+        ]
       }
     }
   }

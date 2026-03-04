@@ -5,6 +5,7 @@ Startup sequence (order matters):
 1. Validate required environment variables
 2. Ensure data directory exists
 3. Run database migrations
+3b. Auto-seed election data (EmptyDir is ephemeral)
 4. Log startup confirmation
 """
 
@@ -28,6 +29,26 @@ from apps.api.routers.reports import router as reports_router
 from apps.api.routers.sessions import router as sessions_router
 
 logger = logging.getLogger(__name__)
+
+
+# ── Auto-seed ──────────────────────────────────────────
+async def _auto_seed(db_path: str) -> None:
+    """Seed election data on startup. Required because EmptyDir is ephemeral."""
+    import importlib
+
+    try:
+        seed_hist = importlib.import_module("scripts.seed_historical")
+        await seed_hist.seed_database(db_path)
+
+        seed_2024 = importlib.import_module("scripts.seed_2024")
+        await seed_2024.seed_database(db_path)
+
+        seed_2026 = importlib.import_module("scripts.seed_2026")
+        seed_2026.seed_2026(db_path)
+
+        logger.info("Auto-seed complete")
+    except Exception:
+        logger.exception("Auto-seed failed — starting with empty ballot data")
 
 
 # ── Lifespan ────────────────────────────────────────────
@@ -63,6 +84,10 @@ async def lifespan(app: FastAPI):
 
     # 3. Run database migrations
     await run_migrations(settings.DB_PATH)
+
+    # 3b. Auto-seed election data (idempotent — INSERT OR IGNORE).
+    # Required because EmptyDir volume is ephemeral on Azure Container Apps.
+    await _auto_seed(settings.DB_PATH)
 
     # 4. Log startup complete
     logger.info("Ballot Guide API started. DB: %s", settings.DB_PATH)
