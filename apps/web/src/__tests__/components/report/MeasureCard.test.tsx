@@ -10,6 +10,8 @@ const SOURCE_STUB: SourceCitation = {
   name: "Ballotpedia",
   url: "https://ballotpedia.org/test",
   bias_rating: null,
+  bias_source: null,
+  bias_rating_url: null,
   fetched_at: "2026-01-01T00:00:00Z",
 };
 

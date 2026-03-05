@@ -16,6 +16,7 @@ const SESSION_STUB: SessionMetadata = {
   priorities: [],
   has_report: false,
   election_name: null,
+  election_id: null,
   message_count: 0,
 };
 

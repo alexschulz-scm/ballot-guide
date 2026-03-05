@@ -86,6 +86,14 @@ class ReportCompleteEvent(OrchestratorEvent):
     report: BallotReport
 
 
+class FollowUpResponseEvent(OrchestratorEvent):
+    """Yielded when the follow-up handler answers a post-report question."""
+
+    event_type: Literal["follow_up_response"]
+    answer: str           # plain text / markdown response
+    sources_used: list[str]   # MCP tools called, empty if report-only
+
+
 class ErrorEvent(OrchestratorEvent):
     """Yielded when a stage encounters an unrecoverable error."""
 

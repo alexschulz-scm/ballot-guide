@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
 import { t } from "@/lib/i18n";
@@ -14,11 +15,19 @@ interface Props {
 }
 
 export default function ReportHeader({ report, freshness, isShared, onRefresh }: Props) {
+  const [copied, setCopied] = useState(false);
+
   const dateStr = new Date(report.generated_at).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  function handleShare() {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <header className="mb-6">
@@ -38,6 +47,12 @@ export default function ReportHeader({ report, freshness, isShared, onRefresh }:
             className="text-sm text-[#1B4FD8] hover:underline ml-3"
           >
             {t("report.print")}
+          </button>
+          <button
+            onClick={handleShare}
+            className="text-sm text-[#1B4FD8] hover:underline ml-3"
+          >
+            {copied ? t("report.link_copied") : t("report.share")}
           </button>
         </div>
       </div>

@@ -94,6 +94,13 @@ export default function ChatView() {
         ]);
       }
 
+      if (event.event_type === "follow_up_response") {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: event.answer },
+        ]);
+      }
+
       if (event.event_type === "error") {
         const errorMsg = event.recoverable
           ? `${event.message}\n\n${t("errors.retry")}`

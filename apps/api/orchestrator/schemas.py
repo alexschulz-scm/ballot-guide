@@ -46,7 +46,9 @@ class SourceCitation(BaseModel):
 
     name: str            # "Ballotpedia", "Miami Herald"
     url: str             # direct URL to the source record
-    bias_rating: str | None   # AllSides rating if news source, else None
+    bias_rating: str | None       # AllSides rating if news source, else None
+    bias_source: str | None = None      # "AllSides" | "AdFontes" | None
+    bias_rating_url: str | None = None  # link to the rating page
     fetched_at: str      # ISO 8601
 
 

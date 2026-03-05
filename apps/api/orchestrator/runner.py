@@ -24,6 +24,7 @@ from apps.api.db.versioning import _compute_current_data_version
 from apps.api.orchestrator.events import (
     ClarificationNeededEvent,
     ErrorEvent,
+    FollowUpResponseEvent,
     IntakeCompleteEvent,
     ItemAnalyzedEvent,
     OrchestratorEvent,
@@ -72,14 +73,15 @@ async def run_orchestrator(
     # Follow-up mode: if session already has a report, answer conversationally
     session = await get_session(session_id, db_path)
     if session and session.get("report_json"):
-        response = await run_follow_up(
-            message, history, session["report_json"],
+        answer, sources_used = await run_follow_up(
+            message, history, session["report_json"], db_path,
         )
-        yield ClarificationNeededEvent(
-            event_type="clarification_needed",
+        yield FollowUpResponseEvent(
+            event_type="follow_up_response",
             session_id=session_id,
             timestamp=_now_iso(),
-            question=response,
+            answer=answer,
+            sources_used=sources_used,
         )
         return
 

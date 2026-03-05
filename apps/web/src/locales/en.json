@@ -34,7 +34,11 @@
     "fiscal_not_published": "Fiscal impact not yet published.",
     "no_position": "No public statement found on {topic}.",
     "limited_data_title": "Limited information available",
-    "sources_label": "Sources"
+    "sources_label": "Sources",
+    "compare_candidates": "Compare Side-by-Side",
+    "hide_comparison": "Hide Comparison",
+    "share": "Share",
+    "link_copied": "Link Copied!"
   },
   "freshness": {
     "stale_message": "Some ballot information has been updated since this guide was generated.",

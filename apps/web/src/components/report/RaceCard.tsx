@@ -1,5 +1,11 @@
+"use client";
+
+import { useState } from "react";
+
+import { t } from "@/lib/i18n";
 import type { BallotReportItem } from "@/lib/types";
 import CandidatePanel from "./CandidatePanel";
+import ComparisonTable from "./ComparisonTable";
 import LimitedDataCard from "./LimitedDataCard";
 
 interface Props {
@@ -8,6 +14,7 @@ interface Props {
 }
 
 export default function RaceCard({ item, priorities }: Props) {
+  const [showComparison, setShowComparison] = useState(false);
   const race = item.race!;
 
   if (race.data_completeness === "limited") {
@@ -34,6 +41,21 @@ export default function RaceCard({ item, priorities }: Props) {
           />
         ))}
       </div>
+      {race.candidates.length >= 2 && (
+        <div className="mt-4 no-print">
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="text-sm text-[#1B4FD8] hover:underline"
+          >
+            {showComparison
+              ? t("report.hide_comparison")
+              : t("report.compare_candidates")}
+          </button>
+        </div>
+      )}
+      {showComparison && (
+        <ComparisonTable candidates={race.candidates} priorities={priorities} />
+      )}
     </div>
   );
 }

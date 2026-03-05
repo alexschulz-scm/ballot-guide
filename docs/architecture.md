@@ -115,10 +115,10 @@ The frontend is the **only public endpoint**. The API container has internal-onl
 
 **What happened:** Persistent `database is locked` errors in production. Azure File Share uses SMB protocol, which does not support the POSIX file locking that SQLite requires — even in single-writer mode.
 
-**What we did:** Switched to `EmptyDir` (ephemeral container-local storage). Data is lost on container restart, but:
-- Election data is seeded from scripts (reproducible in ~30s)
-- Session data is transient
-- The seed workflow (`seed.yml`) can re-populate via `az containerapp exec`
+**What we did:** Switched to `EmptyDir` (ephemeral container-local storage). Data is lost on scale-to-zero or restart, but:
+- Election data auto-seeds at startup from baked-in scripts (3 elections: FL-2022, FL-2024, FL-2026 — loads in <1s)
+- Session data is transient by design
+- Manual re-seed available via `seed.yml` workflow if needed
 
 **Future path:** Azure Container Apps disk mounts with proper POSIX locking, or migration to PostgreSQL when concurrent writes exceed SQLite's capacity.
 
@@ -181,7 +181,7 @@ All `/api/v1/*` requests from the browser are rewritten by Next.js to the intern
 
 Azure Container Apps Consumption plan with `minReplicas: 0` — containers scale to zero when idle, eliminating compute costs during inactive periods. The free tier (180,000 vCPU-seconds/month) covers ~200 hours of active use.
 
-**The blocker solved:** EmptyDir is wiped on scale-down, so the database starts empty on cold start. Solution: auto-seed at startup. The API lifespan manager runs migrations then calls the existing seed scripts (2022, 2024, 2026). All seed data is baked into the Docker image (`data/seed/` + `scripts/`). Total seed data: ~45KB, loads in <1s.
+**The blocker solved:** EmptyDir is wiped on scale-down, so the database starts empty on cold start. Solution: auto-seed at startup. The API lifespan manager runs migrations then calls seed scripts via `_auto_seed()` in `main.py` — three elections are loaded: FL-2022-GEN (historical), FL-2024-GEN (historical), FL-2026-GEN (upcoming). All seed data is baked into the Docker image (`data/seed/` + `scripts/`). Seed functions use `INSERT OR IGNORE` for idempotency. Total seed data: ~45KB, loads in <1s.
 
 **Cold start latency:** 15-30s (container pull + Python startup + migrations + seed). Acceptable for MVP.
 
@@ -240,7 +240,7 @@ infra/
 
 **Trigger:** Manual `workflow_dispatch` with election selector (all / 2022 / 2024 / 2026)
 
-Runs seed scripts inside the running API container via `az containerapp exec`. With auto-seed on startup, this workflow is only needed for manual re-seeding or adding new election data.
+Runs seed scripts inside the running API container via `az containerapp exec`. With auto-seed on startup, this workflow is a fallback for manual re-seeding or adding new election data mid-lifecycle without restarting the container.
 
 ### Required GitHub Secrets
 

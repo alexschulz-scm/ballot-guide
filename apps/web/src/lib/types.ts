@@ -6,6 +6,8 @@ export interface SourceCitation {
   name: string;
   url: string;
   bias_rating: string | null;
+  bias_source: string | null;      // "AllSides" | "AdFontes" | null
+  bias_rating_url: string | null;  // link to the rating page
   fetched_at: string; // ISO 8601
 }
 
@@ -134,6 +136,14 @@ export interface ReportCompleteEvent {
   report: BallotReport;
 }
 
+export interface FollowUpResponseEvent {
+  event_type: "follow_up_response";
+  session_id: string;
+  timestamp: string;
+  answer: string;
+  sources_used: string[]; // MCP tools called, empty if report-only
+}
+
 export interface ErrorEvent {
   event_type: "error";
   session_id: string;
@@ -152,6 +162,7 @@ export interface DoneEvent {
 export type OrchestratorEvent =
   | IntakeCompleteEvent
   | ClarificationNeededEvent
+  | FollowUpResponseEvent
   | BallotFoundEvent
   | ItemAnalyzedEvent
   | RankingCompleteEvent

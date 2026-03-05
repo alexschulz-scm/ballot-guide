@@ -25,11 +25,42 @@ export default function SourceList({ sources }: Props) {
               {source.name}
             </a>
             {source.bias_rating && (
-              <span className="text-gray-500 ml-1">({source.bias_rating})</span>
+              <BiasLabel
+                rating={source.bias_rating}
+                source={source.bias_source ?? null}
+                url={source.bias_rating_url ?? null}
+              />
             )}
           </li>
         ))}
       </ul>
     </div>
   );
+}
+
+function BiasLabel({
+  rating,
+  source,
+  url,
+}: {
+  rating: string;
+  source: string | null;
+  url: string | null;
+}) {
+  const label = source ? `${rating} — ${source}` : rating;
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-gray-500 ml-1 hover:underline"
+      >
+        ({label})
+      </a>
+    );
+  }
+
+  return <span className="text-gray-500 ml-1">({label})</span>;
 }
