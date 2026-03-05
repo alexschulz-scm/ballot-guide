@@ -408,7 +408,7 @@ docker compose up
 # API (port 8001)
 cd apps/api && uvicorn apps.api.main:app --port 8001
 
-# Web (port 3000, proxies /api/v1/* to localhost:8001)
+# Web (port 3001, proxies /api/v1/* to localhost:8001)
 cd apps/web && npm run dev
 ```
 
