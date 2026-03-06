@@ -9,6 +9,8 @@ HARD RULES:
 - opponent_argument: strongest case AGAINST, from official sources
 - Both arguments must be similar length — do not favor either side
 - All sources in the sources list must have real URLs
+- Include news articles from the news coverage section in the sources list
+- For news sources, preserve the bias_rating and bias_source fields from the input
 
 Measure data from sources:
 {measure_data}
@@ -44,6 +46,16 @@ Schema:
       "name": "Florida Division of Elections",
       "url": "https://dos.myflorida.com/elections/",
       "bias_rating": null,
+      "bias_source": null,
+      "bias_rating_url": null,
+      "fetched_at": "2026-01-01T00:00:00Z"
+    },
+    {
+      "name": "Tampa Bay Times",
+      "url": "https://tampabay.com/article-about-amendment",
+      "bias_rating": "Lean Left",
+      "bias_source": "AllSides",
+      "bias_rating_url": "https://allsides.com/news-source/tampa-bay-times",
       "fetched_at": "2026-01-01T00:00:00Z"
     }
   ]

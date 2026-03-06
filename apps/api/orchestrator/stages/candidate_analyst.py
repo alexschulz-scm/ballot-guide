@@ -2,6 +2,7 @@
 Stage 3b: Candidate Analyst — fetch data and analyze all candidates in one race.
 """
 import logging
+from datetime import datetime, timezone
 
 from apps.api.orchestrator.claude_client import (
     SchemaValidationError,
@@ -74,6 +75,7 @@ def _fetch_candidate_data(candidate_id, user_priorities, db_path):
         detail.model_dump_json() if not isinstance(detail, ToolError) else "{}",
         finance.model_dump_json() if not isinstance(finance, ToolError) else "{}",
         news.model_dump_json() if not isinstance(news, ToolError) else "[]",
+        news if not isinstance(news, ToolError) else None,
     )
 
 
@@ -82,7 +84,7 @@ async def _analyze_one_candidate(
     user_priorities: list[str], db_path: str,
 ) -> CandidateAnalysis | None:
     """Fetch MCP data and call Claude for a single candidate."""
-    cand_data, fin_data, news_data = _fetch_candidate_data(
+    cand_data, fin_data, news_data, news_result = _fetch_candidate_data(
         candidate_id, user_priorities, db_path
     )
     system_prompt = load_prompt("system")
@@ -99,7 +101,9 @@ async def _analyze_one_candidate(
     for attempt in range(3):
         try:
             response = await call_claude(system_prompt, messages, max_tokens=800)
-            return await parse_json_response(response, CandidateAnalysis)
+            result = await parse_json_response(response, CandidateAnalysis)
+            _ensure_news_sources(result, news_result)
+            return result
         except SchemaValidationError as exc:
             if attempt == 2:
                 logger.error("All retries failed for candidate %s: %s", candidate_id, exc)
@@ -122,3 +126,22 @@ def _collect_race_sources(analyses: list[CandidateAnalysis]) -> list[SourceCitat
                 seen.add(src.url)
                 sources.append(src)
     return sources
+
+
+def _ensure_news_sources(analysis: CandidateAnalysis, news_result) -> None:
+    """Append news articles as SourceCitations if Claude omitted them."""
+    if news_result is None:
+        return
+    existing_urls = {s.url for s in analysis.sources}
+    now = datetime.now(timezone.utc).isoformat()
+    for article in news_result.articles:
+        if article.url not in existing_urls:
+            analysis.sources.append(SourceCitation(
+                name=article.source_name,
+                url=article.url,
+                bias_rating=article.bias_rating,
+                bias_source=article.bias_source,
+                bias_rating_url=None,
+                fetched_at=now,
+            ))
+            existing_urls.add(article.url)

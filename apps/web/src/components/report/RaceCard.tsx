@@ -42,10 +42,10 @@ export default function RaceCard({ item, priorities }: Props) {
         ))}
       </div>
       {race.candidates.length >= 2 && (
-        <div className="mt-4 no-print">
+        <div className="mt-5 no-print">
           <button
             onClick={() => setShowComparison(!showComparison)}
-            className="text-sm text-[#1B4FD8] hover:underline"
+            className="w-full rounded-md border-2 border-[#1B4FD8] bg-[#1B4FD8]/5 px-4 py-2.5 text-sm font-semibold text-[#1B4FD8] transition-colors hover:bg-[#1B4FD8]/15"
           >
             {showComparison
               ? t("report.hide_comparison")

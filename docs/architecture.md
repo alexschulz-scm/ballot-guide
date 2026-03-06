@@ -1,6 +1,6 @@
 # Ballot Guide — Architecture & Technical Decisions
 
-> Updated: 2026-03-04 — reflects what is actually deployed in the MVP.
+> Updated: 2026-03-05 — reflects what is actually deployed in the MVP.
 
 ---
 
@@ -79,13 +79,16 @@ ballot-guide-web (Next.js)
 ballot-guide-api (FastAPI)
   │
   ├── POST /api/v1/session                → create session
+  ├── GET  /api/v1/session/{id}           → get session metadata
   ├── POST /api/v1/session/{id}/message   → SSE stream
   ├── GET  /api/v1/session/{id}/report    → structured JSON report
   ├── GET  /api/v1/elections              → list elections
   └── GET  /health                        → liveness check
   │
   ▼ (on /message)
-Orchestrator Runner (5 stages, sequential)
+Orchestrator Runner (5 stages + follow-up mode)
+  │
+  ├── If session has report → Follow-Up (intent detection + live MCP fetch)
   │
   ├── Stage 1: Intake        → extract zip + priorities from conversation
   ├── Stage 2: Ballot Resolve → match address to election ballot
@@ -198,6 +201,7 @@ infra/
 ├── main.bicep                    # Root orchestrator — wires all modules
 ├── Dockerfile                    # API container (python:3.11-slim)
 ├── web.Dockerfile                # Web container (node:20-alpine, multi-stage)
+├── docker-compose.yml            # Local development — API service
 ├── modules/
 │   ├── registry.bicep            # ACR (Basic SKU, admin enabled)
 │   ├── environment.bicep         # Container Apps Environment + Log Analytics
@@ -268,6 +272,10 @@ Runs seed scripts inside the running API container via `az containerapp exec`. W
 - SSE parsing isolated in `useSSEStream` hook
 - Session state in `useSession` hook (localStorage for session ID and election ID)
 - Report items displayed in API-provided relevance order (no re-sorting)
+- ComparisonTable for side-by-side candidate comparison (responsive table on desktop, stacked cards on mobile)
+- StalenessBar renders data freshness banners (blue for stale, yellow for very stale) with refresh button
+- Share button in ReportHeader copies URL to clipboard; SharedDisclaimer renders on shared links with original priorities
+- BiasLabel in SourceList displays AllSides/Ad Fontes bias ratings with optional link to rating page
 
 ### Backend — FastAPI
 
@@ -294,13 +302,13 @@ Rules:
 - All Claude calls go through `claude_client.py` (centralized)
 - Prompts live in `.txt` files under `apps/api/orchestrator/prompts/`
 - Temperature: 0.1 (fixed, not configurable)
-- Follow-up mode: if session already has a report, subsequent messages get conversational answers
+- Follow-up mode: if session already has a report, subsequent messages route to intent detection which fetches live data from MCP servers (legal text via legislation, campaign finance via ballot_data, news via news server) before answering
 
 ### MCP Servers (3, in-process)
 
 | Server | Tools | External APIs |
 |--------|-------|---------------|
-| `ballot_data` | get_ballot, get_candidates, get_measures, get_finance | Google Civic, OpenFEC, FL Division of Elections |
+| `ballot_data` | get_ballot_by_address, get_measure_detail, get_candidate_detail, get_campaign_finance | Google Civic, OpenFEC, FL Division of Elections |
 | `legislation` | get_measure_text, parse_measure_text | FL Legislature portal |
 | `news` | search_news, get_source_bias | NewsAPI, AllSides |
 
@@ -401,8 +409,8 @@ Free-text priorities not matching a taxonomy key are preserved in `priorities_ra
 ## Local Development
 
 ```bash
-# Full stack with Docker Compose
-docker compose up
+# Full stack with Docker Compose (from repo root)
+docker compose -f infra/docker-compose.yml up
 
 # Or individually:
 # API (port 8001)

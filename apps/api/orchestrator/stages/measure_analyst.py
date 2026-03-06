@@ -2,6 +2,7 @@
 Stage 3a: Measure Analyst — fetch data and analyze one ballot measure via Claude.
 """
 import logging
+from datetime import datetime, timezone
 
 from apps.api.orchestrator.claude_client import (
     SchemaValidationError,
@@ -9,7 +10,7 @@ from apps.api.orchestrator.claude_client import (
     load_prompt,
     parse_json_response,
 )
-from apps.api.orchestrator.schemas import MeasureAnalysis
+from apps.api.orchestrator.schemas import MeasureAnalysis, SourceCitation
 from mcp_servers.ballot_data.tools.measure import handle_get_measure_detail
 from mcp_servers.legislation.tools.measure_text import handle_get_measure_text
 from mcp_servers.legislation.tools.parse_text import handle_parse_measure_text
@@ -52,7 +53,9 @@ async def run_measure_analysis(
     for attempt in range(3):
         try:
             response = await call_claude(system_prompt, messages, max_tokens=1200)
-            return await parse_json_response(response, MeasureAnalysis)
+            result = await parse_json_response(response, MeasureAnalysis)
+            _ensure_news_sources(result, data.get("news_result"))
+            return result
         except SchemaValidationError as exc:
             if attempt == 2:
                 logger.error("All retries failed for measure %s: %s", measure_summary.id, exc)
@@ -92,4 +95,24 @@ def _fetch_measure_data(measure: MeasureSummary, db_path: str) -> dict:
         "measure_data": measure_data,
         "legislation_sections": legislation_sections,
         "news_articles": news_articles,
+        "news_result": news if not isinstance(news, ToolError) else None,
     }
+
+
+def _ensure_news_sources(analysis: MeasureAnalysis, news_result) -> None:
+    """Append news articles as SourceCitations if Claude omitted them."""
+    if news_result is None:
+        return
+    existing_urls = {s.url for s in analysis.sources}
+    now = datetime.now(timezone.utc).isoformat()
+    for article in news_result.articles:
+        if article.url not in existing_urls:
+            analysis.sources.append(SourceCitation(
+                name=article.source_name,
+                url=article.url,
+                bias_rating=article.bias_rating,
+                bias_source=article.bias_source,
+                bias_rating_url=None,
+                fetched_at=now,
+            ))
+            existing_urls.add(article.url)
