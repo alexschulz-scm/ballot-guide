@@ -205,7 +205,7 @@ def _fetch_measure_text(measure_id: str, db_path: str) -> str | None:
         from mcp_servers.legislation.tools.measure_text import (
             handle_get_measure_text,
         )
-        from mcp_servers.legislation.models import GetMeasureTextInput
+        from mcp_servers.shared.models import GetMeasureTextInput
 
         result = handle_get_measure_text(
             GetMeasureTextInput(measure_id=measure_id), db_path,
@@ -226,7 +226,7 @@ def _fetch_finance(
         from mcp_servers.ballot_data.tools.finance import (
             handle_get_campaign_finance,
         )
-        from mcp_servers.ballot_data.models import GetCampaignFinanceInput
+        from mcp_servers.shared.models import GetCampaignFinanceInput
 
         report = json.loads(report_json)
         candidate_ids = _find_candidate_ids(item_id, report)
@@ -254,7 +254,7 @@ def _fetch_news(
     """Search news for a ballot item."""
     try:
         from mcp_servers.news.tools.search import handle_search_news
-        from mcp_servers.news.models import SearchNewsInput
+        from mcp_servers.shared.models import SearchNewsInput
 
         report = json.loads(report_json)
         query = _find_item_title(item_id, report)
@@ -279,7 +279,7 @@ def _fetch_detail(item_id: str, db_path: str) -> str | None:
         from mcp_servers.ballot_data.tools.measure import (
             handle_get_measure_detail,
         )
-        from mcp_servers.ballot_data.models import GetMeasureDetailInput
+        from mcp_servers.shared.models import GetMeasureDetailInput
 
         result = handle_get_measure_detail(
             GetMeasureDetailInput(
@@ -295,10 +295,10 @@ def _fetch_detail(item_id: str, db_path: str) -> str | None:
         from mcp_servers.ballot_data.tools.candidate import (
             handle_get_candidate_detail,
         )
-        from mcp_servers.ballot_data.models import GetCandidateDetailInput
+        from mcp_servers.shared.models import GetCandidateDetailInput
 
         result = handle_get_candidate_detail(
-            GetCandidateDetailInput(candidate_id=item_id), db_path,
+            GetCandidateDetailInput(candidate_id=item_id, topics=None), db_path,
         )
         if not isinstance(result, ToolError):
             return result.model_dump_json(indent=2)
