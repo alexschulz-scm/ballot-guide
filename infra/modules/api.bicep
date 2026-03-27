@@ -6,6 +6,7 @@ param registryName string
 @secure()
 param registryPassword string
 param apiImageTag string
+param corsOrigins string = '["https://ballot-guide.azurecontainerapps.io"]'
 
 // Secrets
 @secure()
@@ -59,7 +60,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'MOCK_EXTERNAL_APIS', value: 'false' }
             { name: 'MOCK_CLAUDE', value: 'false' }
             { name: 'MOCK_CIVIC_API', value: 'true' }
-            { name: 'CORS_ORIGINS', value: '["http://localhost:3000"]' }
+            { name: 'CORS_ORIGINS', value: corsOrigins }
             { name: 'ANTHROPIC_API_KEY', secretRef: 'anthropic-api-key' }
             { name: 'GOOGLE_CIVIC_API_KEY', secretRef: 'google-civic-api-key' }
             { name: 'NEWSAPI_KEY', secretRef: 'newsapi-key' }

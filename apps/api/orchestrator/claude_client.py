@@ -129,8 +129,13 @@ def load_prompt(prompt_name: str) -> str:
     Load prompt text from apps/api/orchestrator/prompts/{prompt_name}.txt.
 
     Raises FileNotFoundError if the prompt file does not exist.
+    Raises ValueError if the prompt name contains path traversal characters.
     """
-    path = _PROMPTS_DIR / f"{prompt_name}.txt"
+    if ".." in prompt_name or "/" in prompt_name or "\\" in prompt_name:
+        raise ValueError(f"Invalid prompt name: {prompt_name}")
+    path = (_PROMPTS_DIR / f"{prompt_name}.txt").resolve()
+    if not path.is_relative_to(_PROMPTS_DIR.resolve()):
+        raise ValueError(f"Prompt path escapes prompts directory: {prompt_name}")
     if not path.exists():
         raise FileNotFoundError(f"Prompt file not found: {path}")
     return path.read_text(encoding="utf-8")

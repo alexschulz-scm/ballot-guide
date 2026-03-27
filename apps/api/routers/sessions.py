@@ -6,9 +6,12 @@ Thin routing layer: validate input, delegate to session store, format response.
 
 import json
 import logging
+import re
 
 from fastapi import APIRouter, Header, Request
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from apps.api.config import settings
 from apps.api.models import (
@@ -25,18 +28,26 @@ from apps.api.session.store import (
 
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(key_func=get_remote_address)
+
 router = APIRouter(tags=["sessions"])
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
 @router.post("/session", status_code=201, response_model=CreateSessionResponse)
+@limiter.limit("20/minute")
 async def create_new_session(
     request: Request,
     body: CreateSessionRequest = CreateSessionRequest(),
 ) -> CreateSessionResponse:
     """Creates a new anonymous session."""
-    # Extract browser language from Accept-Language header
+    # Extract browser language from Accept-Language header safely
     accept_lang = request.headers.get("accept-language")
-    detected_language = accept_lang.split(",")[0].strip() if accept_lang else None
+    detected_language = None
+    if accept_lang:
+        lang_match = re.match(r"([a-zA-Z]{2}(?:-[a-zA-Z]{2})?)", accept_lang)
+        detected_language = lang_match.group(1).lower() if lang_match else None
 
     try:
         session_id = await create_session(
@@ -47,13 +58,12 @@ async def create_new_session(
             body.election_id,
         )
     except Exception as exc:
-        logger.error("Failed to create session: %s", exc)
+        logger.error("Failed to create session: %s", exc, exc_info=True)
         return JSONResponse(
             status_code=500,
             content=APIError(
                 error_code="DB_ERROR",
                 message="Failed to create session.",
-                detail=str(exc),
             ).model_dump(),
         )
 
@@ -71,13 +81,22 @@ async def create_new_session(
 @router.get("/session/{session_id}", response_model=None)
 async def get_session_metadata(session_id: str) -> SessionMetadataResponse | JSONResponse:
     """Returns session metadata. Never returns the full report."""
+    if not _UUID_RE.match(session_id):
+        return JSONResponse(
+            status_code=404,
+            content=APIError(
+                error_code="SESSION_NOT_FOUND",
+                message="Session not found.",
+            ).model_dump(),
+        )
+
     session = await get_session(session_id, settings.DB_PATH)
     if session is None:
         return JSONResponse(
             status_code=404,
             content=APIError(
                 error_code="SESSION_NOT_FOUND",
-                message=f"Session {session_id} not found.",
+                message="Session not found.",
             ).model_dump(),
         )
 

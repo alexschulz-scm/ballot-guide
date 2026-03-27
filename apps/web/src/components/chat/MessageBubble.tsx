@@ -108,6 +108,15 @@ function RichText({ text }: { text: string }) {
   return <>{elements}</>;
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, "https://placeholder.invalid");
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   // Regex: **bold**, *italic*, [text](url)
@@ -132,18 +141,23 @@ function renderInline(text: string): ReactNode[] {
       // *italic*
       nodes.push(<em key={key++}>{match[4]}</em>);
     } else if (match[5]) {
-      // [text](url)
-      nodes.push(
-        <a
-          key={key++}
-          href={match[7]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          {match[6]}
-        </a>
-      );
+      // [text](url) — validate protocol to prevent javascript: and data: XSS
+      const url = match[7];
+      if (isSafeUrl(url)) {
+        nodes.push(
+          <a
+            key={key++}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            {match[6]}
+          </a>
+        );
+      } else {
+        nodes.push(<span key={key++}>{match[6]}</span>);
+      }
     }
 
     lastIndex = match.index + match[0].length;

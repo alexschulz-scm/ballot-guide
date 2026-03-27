@@ -13,10 +13,13 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from apps.api.config import settings
 from apps.api.db.connection import run_migrations
@@ -96,11 +99,43 @@ async def lifespan(app: FastAPI):
     # Shutdown — nothing needed for MVP
 
 
+# ── Rate limiter ────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+
+
 app = FastAPI(
     title="Ballot Guide API",
     version=settings.APP_VERSION,
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+
+
+# ── Rate limit error handler ──────────────────────────
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content=APIError(
+            error_code="RATE_LIMITED",
+            message="Too many requests. Please try again later.",
+        ).model_dump(),
+    )
+
+
+# ── Security headers middleware ────────────────────────
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next) -> Response:
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+    )
+    return response
+
 
 # ── Middleware ───────────────────────────────────────────
 # Request logging (raw ASGI — safe with StreamingResponse)

@@ -12,13 +12,20 @@ Non-negotiables:
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from apps.api.config import settings
 from apps.api.models import APIError, SendMessageRequest
+
+limiter = Limiter(key_func=get_remote_address)
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 from apps.api.orchestrator.events import DoneEvent, ErrorEvent
 from apps.api.orchestrator.runner import run_orchestrator
 from apps.api.session.store import (
@@ -37,7 +44,7 @@ def _session_not_found(session_id: str) -> JSONResponse:
         status_code=404,
         content=APIError(
             error_code="SESSION_NOT_FOUND",
-            message=f"Session {session_id} not found.",
+            message="Session not found.",
         ).model_dump(),
     )
 
@@ -105,11 +112,15 @@ async def event_generator(session_id, message, db_path):
 
 
 @router.post("/session/{session_id}/message", response_model=None)
+@limiter.limit("10/minute")
 async def send_message(
-    session_id: str, body: SendMessageRequest
+    request: Request, session_id: str, body: SendMessageRequest
 ) -> StreamingResponse | JSONResponse:
     """Accept a user message, run the orchestrator, stream events as SSE."""
     db_path = settings.DB_PATH
+
+    if not _UUID_RE.match(session_id):
+        return _session_not_found(session_id)
 
     session = await get_session(session_id, db_path)
     if session is None:

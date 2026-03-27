@@ -5,6 +5,15 @@ interface Props {
   sources: SourceCitation[];
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default function SourceList({ sources }: Props) {
   if (sources.length === 0) return null;
 
@@ -16,14 +25,18 @@ export default function SourceList({ sources }: Props) {
       <ul className="list-none space-y-1">
         {sources.map((source) => (
           <li key={source.url} className="text-sm">
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#1B4FD8] underline"
-            >
-              {source.name}
-            </a>
+            {isSafeUrl(source.url) ? (
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#1B4FD8] underline"
+              >
+                {source.name}
+              </a>
+            ) : (
+              <span>{source.name}</span>
+            )}
             {source.bias_rating && (
               <BiasLabel
                 rating={source.bias_rating}
@@ -49,7 +62,7 @@ function BiasLabel({
 }) {
   const label = source ? `${rating} — ${source}` : rating;
 
-  if (url) {
+  if (url && isSafeUrl(url)) {
     return (
       <a
         href={url}

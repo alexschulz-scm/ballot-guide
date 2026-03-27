@@ -9,8 +9,9 @@ DataSource is a retired alias from before the integration review.
 """
 
 from enum import Enum
+from urllib.parse import urlparse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +39,15 @@ class SourceCitation(BaseModel):
     url: str                   # direct URL to the source record
     fetched_at: str            # ISO 8601 datetime string
     bias_rating: str | None    # AllSides rating if applicable, else null
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_protocol(cls, v: str) -> str:
+        """Reject javascript: and data: URLs to prevent XSS."""
+        parsed = urlparse(v)
+        if parsed.scheme and parsed.scheme not in ("http", "https", ""):
+            raise ValueError(f"Invalid URL scheme: {parsed.scheme}")
+        return v
 
 
 class ToolError(BaseModel):

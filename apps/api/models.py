@@ -4,7 +4,11 @@ Request/response Pydantic models for the API layer.
 APIError is used for ALL non-200 error responses — no bare HTTPException.
 """
 
+import re
+
 from pydantic import BaseModel, field_validator
+
+_ELECTION_ID_RE = re.compile(r"^FL-\d{4}-[A-Z]+$")
 
 
 # ---------------------------------------------------------------------------
@@ -19,14 +23,23 @@ class CreateSessionRequest(BaseModel):
 
     @field_validator("display_name")
     @classmethod
-    def truncate_display_name(cls, v: str | None) -> str | None:
-        return v[:50] if v else None
+    def validate_display_name(cls, v: str | None) -> str | None:
+        if v and len(v) > 50:
+            raise ValueError("display_name must be 50 characters or fewer")
+        return v
 
     @field_validator("language")
     @classmethod
     def validate_language(cls, v: str) -> str:
         if v not in ["en"]:
             raise ValueError("Unsupported language")
+        return v
+
+    @field_validator("election_id")
+    @classmethod
+    def validate_election_id(cls, v: str | None) -> str | None:
+        if v is not None and not _ELECTION_ID_RE.match(v):
+            raise ValueError("Invalid election_id format")
         return v
 
 

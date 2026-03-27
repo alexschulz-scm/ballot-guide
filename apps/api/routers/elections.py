@@ -26,12 +26,13 @@ async def list_elections() -> list[ElectionListItem] | JSONResponse:
             )
             rows = await cursor.fetchall()
     except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("Failed to list elections: %s", exc, exc_info=True)
         return JSONResponse(
             status_code=500,
             content=APIError(
                 error_code="DB_ERROR",
                 message="Failed to list elections.",
-                detail=str(exc),
             ).model_dump(),
         )
 

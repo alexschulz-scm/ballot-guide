@@ -5,6 +5,9 @@ FROM python:3.11-slim AS base
 
 WORKDIR /app
 
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
 # Install dependencies first (layer caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -15,8 +18,10 @@ COPY mcp_servers/ mcp_servers/
 COPY scripts/ scripts/
 COPY data/ data/
 
-# Create data directory for SQLite
-RUN mkdir -p /data
+# Create data directory for SQLite and set permissions
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
+USER appuser
 
 EXPOSE 8000
 

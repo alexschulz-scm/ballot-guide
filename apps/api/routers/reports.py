@@ -6,6 +6,7 @@ Serves cached ballot reports. Never calls the orchestrator.
 
 import json
 import logging
+import re
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -21,6 +22,8 @@ from apps.api.session.store import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["reports"])
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
 def _not_found(error_code: str, message: str) -> JSONResponse:
@@ -44,9 +47,12 @@ def _processing_response() -> JSONResponse:
 @router.get("/session/{session_id}/report", response_model=None)
 async def get_session_report(session_id: str) -> ReportResponse | JSONResponse:
     """Returns the most recently completed ballot report for a session."""
+    if not _UUID_RE.match(session_id):
+        return _not_found("SESSION_NOT_FOUND", "Session not found.")
+
     session = await get_session(session_id, settings.DB_PATH)
     if session is None:
-        return _not_found("SESSION_NOT_FOUND", f"Session {session_id} not found.")
+        return _not_found("SESSION_NOT_FOUND", "Session not found.")
 
     if session["status"] == "processing":
         return _processing_response()

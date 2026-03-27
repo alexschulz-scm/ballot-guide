@@ -58,8 +58,7 @@ class Settings(BaseSettings):
         for key in required_keys:
             value = getattr(self, key, "")
             if value:
-                masked = value[:4] + "****"
-                logger.info("Config: %s = %s", key, masked)
+                logger.info("Config: %s = <loaded>", key)
             else:
                 logger.warning("Config: %s is EMPTY", key)
         logger.info(
