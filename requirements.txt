@@ -28,5 +28,5 @@ mcp~=1.0.0
 pdfplumber~=0.11.0
 
 # Testing (dev only)
-pytest~=8.0.0
+pytest~=8.2.0
 pytest-asyncio~=0.24.0
