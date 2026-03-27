@@ -1,0 +1,29 @@
+Codemap Generation Report — 2026-03-27
+========================================
+
+Status: INITIAL GENERATION (no previous codemaps existed)
+
+Files Generated:
+  docs/CODEMAPS/architecture.md  — System diagram, data flow, key boundaries
+  docs/CODEMAPS/backend.md       — API routes, orchestrator pipeline, key files
+  docs/CODEMAPS/frontend.md      — Page tree, component hierarchy, hooks, lib
+  docs/CODEMAPS/data.md          — Database schema, migrations, cache strategy
+  docs/CODEMAPS/dependencies.md  — MCP tools, external APIs, packages, mock flags
+
+Metrics:
+  Total lines: 391
+  Estimated tokens: ~3,850 (all 5 files combined)
+  Source files scanned: 95+ (Python, TypeScript, SQL, JSON)
+
+Project Summary:
+  Languages: Python (backend), TypeScript (frontend)
+  Frameworks: FastAPI, Next.js 16, React 19
+  Database: SQLite (aiosqlite, WAL mode)
+  AI: Claude Sonnet via Anthropic SDK (5-stage orchestrator)
+  MCP Servers: 3 (ballot_data, legislation, news) with 8 tools total
+  External APIs: 7 (Anthropic, Google Civic, NewsAPI, OpenFEC, FL DoE, FL Legislature, Ballotpedia)
+  Test files: 41 (28 Python + 13 TypeScript)
+
+Architecture Changes Since Last Scan: N/A (first generation)
+
+Staleness Warnings: None (all files freshly scanned)
