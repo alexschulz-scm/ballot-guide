@@ -45,7 +45,13 @@
       "Bash(npm ls remark)",
       "Bash(xargs grep -l -i \"azure\\\\|deploy\\\\|container\\\\|infrastructure\")",
       "Bash(python -m pytest tests/ -v)",
-      "Bash(python -m pytest tests/orchestrator/test_runner.py tests/db/test_seed.py -v)"
+      "Bash(python -m pytest tests/orchestrator/test_runner.py tests/db/test_seed.py -v)",
+      "Bash(gh run view 22680476536 --log-failed)",
+      "Bash(az storage account list -g ballot-guide-rg --query \"[0].name\" -o tsv)",
+      "Bash(gh run watch)",
+      "Bash(gh run list --limit 1 --json databaseId,status -q \".[0].databaseId\")",
+      "Bash(gh run watch 22683755250 --exit-status)",
+      "Bash(az containerapp show -n ballot-guide-web -g ballot-guide-rg --query \"properties.configuration.ingress.fqdn\" -o tsv)"
     ]
   }
 }

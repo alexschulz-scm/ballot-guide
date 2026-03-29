@@ -41,3 +41,4 @@ apps/web/out/
 
 # Logs
 *.log
+.coverage
