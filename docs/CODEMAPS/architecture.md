@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-27 | Files scanned: 95+ | Token estimate: ~900 -->
+<!-- Generated: 2026-04-20 | Files scanned: 95+ | Token estimate: ~900 -->
 
 # Architecture Overview
 
@@ -18,8 +18,8 @@ User Browser
     |
     +-- Orchestrator Runner (5-stage pipeline)
             |
-            +-- Claude Client (Anthropic SDK, temp=0.1)
-            |       model: claude-sonnet-4-6
+            +-- LLM Client (google-genai SDK, temp=0.1)
+            |       model: gemini-2.5-flash (settings.GEMINI_MODEL)
             |       prompts: apps/api/orchestrator/prompts/*.txt
             |
             +-- MCP Tool Handlers (direct Python import, not subprocess)
@@ -40,10 +40,10 @@ User Browser
 1. User sends message
 2. Router validates session, sets status="processing", saves message
 3. Runner sequences stages:
-   Stage 1 (Intake)       --> Claude extracts zip + priorities
+   Stage 1 (Intake)       --> LLM extracts zip + priorities
    Stage 2 (Ballot)       --> MCP resolves zip to ballot items
-   Stage 3 (Analysis)     --> Claude + MCP analyze each measure/race
-   Stage 4 (Ranking)      --> Claude scores items by user priorities
+   Stage 3 (Analysis)     --> LLM + MCP analyze each measure/race
+   Stage 4 (Ranking)      --> LLM scores items by user priorities
    Stage 5 (Report)       --> Pure sync join into BallotReport
 4. Events streamed as SSE to frontend
 5. Report saved to session, status="active"
@@ -53,7 +53,7 @@ User Browser
 ## Key Boundaries
 
 - **Frontend <-> Backend:** HTTP + SSE only. Types mirrored in lib/types.ts and orchestrator/schemas.py
-- **Backend <-> Claude:** All calls through claude_client.py. No direct SDK use elsewhere
+- **Backend <-> LLM:** All calls through llm_client.py (Gemini). No direct SDK use elsewhere
 - **Backend <-> External APIs:** All calls through MCP tool handlers. Orchestrator never calls APIs directly
 - **Cache layer:** SQLite api_cache table. Every external call checks cache first (shared/cache.py)
 

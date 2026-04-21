@@ -5,7 +5,7 @@ import json
 import logging
 import re
 
-from apps.api.orchestrator.claude_client import call_claude, load_prompt, parse_json_response
+from apps.api.orchestrator.llm_client import call_llm, load_prompt, parse_json_response
 from apps.api.orchestrator.schemas import IntakeResult
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ async def run_intake(
         .replace("{message}", message)
     )
     messages = [{"role": "user", "content": formatted}]
-    response = await call_claude(system_prompt, messages, max_tokens=400)
+    response = await call_llm(system_prompt, messages, max_tokens=400)
     result = await parse_json_response(response, IntakeResult)
     return _post_process(result)
 

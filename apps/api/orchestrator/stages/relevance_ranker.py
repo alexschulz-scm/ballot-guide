@@ -4,9 +4,9 @@ Stage 4: Relevance Ranker — score all ballot items against user priorities.
 import json
 import logging
 
-from apps.api.orchestrator.claude_client import (
+from apps.api.orchestrator.llm_client import (
     SchemaValidationError,
-    call_claude,
+    call_llm,
     load_prompt,
 )
 from apps.api.orchestrator.schemas import MeasureAnalysis, RaceAnalysis, RelevanceScore
@@ -51,7 +51,7 @@ async def run_relevance_ranking(
 
     for attempt in range(3):
         try:
-            response = await call_claude(system_prompt, messages, max_tokens=800)
+            response = await call_llm(system_prompt, messages, max_tokens=800)
             return _scrub_scores(_parse_scores(response))
         except SchemaValidationError as exc:
             if attempt == 2:

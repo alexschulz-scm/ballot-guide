@@ -194,7 +194,7 @@ class TestTrimReport:
 async def test_run_follow_up_civics(monkeypatch):
     """Civics intent skips deeper data, calls Claude, returns answer."""
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.follow_up.call_claude",
+        "apps.api.orchestrator.stages.follow_up.call_llm",
         lambda *a, **kw: _async_return("A constitutional amendment changes the state constitution."),
     )
     answer, sources = await run_follow_up(
@@ -208,7 +208,7 @@ async def test_run_follow_up_civics(monkeypatch):
 async def test_run_follow_up_finance(monkeypatch):
     """Finance intent fetches deeper data via MCP, passes to Claude."""
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.follow_up.call_claude",
+        "apps.api.orchestrator.stages.follow_up.call_llm",
         lambda *a, **kw: _async_return("Jane Doe raised $5M from PACs."),
     )
     # Mock _fetch_finance to return fake data
@@ -227,7 +227,7 @@ async def test_run_follow_up_finance(monkeypatch):
 async def test_run_follow_up_legal_text(monkeypatch):
     """Legal text intent fetches measure text via MCP."""
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.follow_up.call_claude",
+        "apps.api.orchestrator.stages.follow_up.call_llm",
         lambda *a, **kw: _async_return("The amendment text reads..."),
     )
     monkeypatch.setattr(
@@ -245,7 +245,7 @@ async def test_run_follow_up_legal_text(monkeypatch):
 async def test_run_follow_up_news(monkeypatch):
     """News intent fetches news via MCP."""
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.follow_up.call_claude",
+        "apps.api.orchestrator.stages.follow_up.call_llm",
         lambda *a, **kw: _async_return("Recent coverage discusses..."),
     )
     monkeypatch.setattr(
@@ -263,7 +263,7 @@ async def test_run_follow_up_news(monkeypatch):
 async def test_run_follow_up_detail(monkeypatch):
     """Detail intent fetches detail via MCP."""
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.follow_up.call_claude",
+        "apps.api.orchestrator.stages.follow_up.call_llm",
         lambda *a, **kw: _async_return("Here are details about Amendment 1..."),
     )
     monkeypatch.setattr(

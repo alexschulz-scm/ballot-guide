@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-27 | Files scanned: 33 | Token estimate: ~950 -->
+<!-- Generated: 2026-04-20 | Files scanned: 33 | Token estimate: ~950 -->
 
 # Backend Architecture
 
@@ -18,13 +18,13 @@ GET  /api/v1/session/{id}/report      --> routers/reports.py:get_session_report 
 ```
 runner.py:run_orchestrator()
   |
-  +-- Stage 1: stages/intake.py              --> Claude (intake.txt)         --> IntakeResult
+  +-- Stage 1: stages/intake.py              --> LLM (intake.txt)            --> IntakeResult
   +-- Stage 2: stages/ballot_resolver.py     --> MCP get_ballot_by_address   --> BallotResolverResult
-  +-- Stage 3a: stages/measure_analyst.py    --> MCP (4 tools) + Claude      --> MeasureAnalysis[]
-  +-- Stage 3b: stages/candidate_analyst.py  --> MCP (3 tools) + Claude      --> RaceAnalysis[]
-  +-- Stage 4: stages/relevance_ranker.py    --> Claude (relevance_ranking)  --> RelevanceScore[]
+  +-- Stage 3a: stages/measure_analyst.py    --> MCP (4 tools) + LLM         --> MeasureAnalysis[]
+  +-- Stage 3b: stages/candidate_analyst.py  --> MCP (3 tools) + LLM         --> RaceAnalysis[]
+  +-- Stage 4: stages/relevance_ranker.py    --> LLM (relevance_ranking)     --> RelevanceScore[]
   +-- Stage 5: stages/report_assembler.py    --> Pure sync join              --> BallotReport
-  +-- Follow-up: stages/follow_up.py         --> MCP + Claude (follow_up)   --> (answer, sources)
+  +-- Follow-up: stages/follow_up.py         --> MCP + LLM (follow_up)       --> (answer, sources)
 ```
 
 ## Key Files
@@ -39,7 +39,7 @@ runner.py:run_orchestrator()
 | db/queries.py | 141 | Canonical query functions (never ad-hoc SQL) |
 | db/versioning.py | 103 | Data version hashing, freshness detection |
 | orchestrator/runner.py | 236 | Stage sequencing, event streaming |
-| orchestrator/claude_client.py | 160 | Anthropic SDK wrapper, prompt loading, mock mode |
+| orchestrator/llm_client.py | 170 | google-genai SDK wrapper, prompt loading, mock mode (MOCK_LLM) |
 | orchestrator/schemas.py | 205 | Stage data contracts (11 Pydantic models) |
 | orchestrator/events.py | 113 | SSE event types (9 event classes) |
 | middleware/logging.py | 63 | Raw ASGI structured JSON request logging |
@@ -57,7 +57,7 @@ Enforced in store.py:_VALID_TRANSITIONS. Never bypass with direct SQL.
 
 | File | Lines | Stage |
 |------|-------|-------|
-| system.txt | 33 | Injected into every Claude call (neutrality rules) |
+| system.txt | 33 | Injected into every LLM call (neutrality rules) |
 | intake.txt | 33 | Stage 1: extract zip + priorities |
 | measure_analysis.txt | 62 | Stage 3a: analyze ballot measure |
 | candidate_analysis.txt | 59 | Stage 3b: analyze candidate |
@@ -68,5 +68,5 @@ Enforced in store.py:_VALID_TRANSITIONS. Never bypass with direct SQL.
 
 - All non-200 responses use `APIError(error_code, message, detail)` model
 - MCP tool failures return `ToolError` (structured, never raw exceptions)
-- Claude schema failures retry up to 3x, then degrade gracefully
+- LLM schema failures retry up to 3x, then degrade gracefully
 - DoneEvent always emitted in finally block (even on error)

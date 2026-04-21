@@ -121,7 +121,7 @@ _SCORES_WITH_FORBIDDEN = json.dumps([
 # Helper: async mock that returns responses in sequence
 # ---------------------------------------------------------------------------
 
-def _make_call_claude_sequence(*responses: str):
+def _make_call_llm_sequence(*responses: str):
     """Return an async mock that yields each response in order (repeats last)."""
     resp_list = list(responses)
     state = {"idx": 0}
@@ -150,8 +150,8 @@ def _noop_mcp(*args, **kwargs):
 @pytest.mark.asyncio
 async def test_intake_normalizes_free_text_priority(monkeypatch):
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.intake.call_claude",
-        _make_call_claude_sequence(_INTAKE_VALID_JSON),
+        "apps.api.orchestrator.stages.intake.call_llm",
+        _make_call_llm_sequence(_INTAKE_VALID_JSON),
     )
     result = await run_intake("I care about housing in Miami 33101", [], "unused.db")
     assert result.zip_code == "33101"
@@ -162,8 +162,8 @@ async def test_intake_normalizes_free_text_priority(monkeypatch):
 @pytest.mark.asyncio
 async def test_intake_truncates_to_5_priorities(monkeypatch):
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.intake.call_claude",
-        _make_call_claude_sequence(_INTAKE_SEVEN_PRIORITIES_JSON),
+        "apps.api.orchestrator.stages.intake.call_llm",
+        _make_call_llm_sequence(_INTAKE_SEVEN_PRIORITIES_JSON),
     )
     result = await run_intake("I care about everything", [], "unused.db")
     assert len(result.priorities) <= 5
@@ -172,8 +172,8 @@ async def test_intake_truncates_to_5_priorities(monkeypatch):
 @pytest.mark.asyncio
 async def test_intake_invalid_zip_sets_needs_clarification(monkeypatch):
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.intake.call_claude",
-        _make_call_claude_sequence(_INTAKE_BAD_ZIP_JSON),
+        "apps.api.orchestrator.stages.intake.call_llm",
+        _make_call_llm_sequence(_INTAKE_BAD_ZIP_JSON),
     )
     result = await run_intake("I live in Miami area", [], "unused.db")
     assert result.needs_clarification is True
@@ -236,8 +236,8 @@ _MEASURE_SUMMARY = MeasureSummary(
 async def test_measure_analyst_retries_on_bad_json(monkeypatch):
     _patch_measure_mcp(monkeypatch)
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.measure_analyst.call_claude",
-        _make_call_claude_sequence("not valid json {{{", _MEASURE_VALID_JSON),
+        "apps.api.orchestrator.stages.measure_analyst.call_llm",
+        _make_call_llm_sequence("not valid json {{{", _MEASURE_VALID_JSON),
     )
     result = await run_measure_analysis(_MEASURE_SUMMARY, ["housing"], "unused.db")
     assert isinstance(result, MeasureAnalysis)
@@ -248,8 +248,8 @@ async def test_measure_analyst_retries_on_bad_json(monkeypatch):
 async def test_measure_analyst_returns_none_after_3_failures(monkeypatch):
     _patch_measure_mcp(monkeypatch)
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.measure_analyst.call_claude",
-        _make_call_claude_sequence("bad {", "still bad {", "also bad {"),
+        "apps.api.orchestrator.stages.measure_analyst.call_llm",
+        _make_call_llm_sequence("bad {", "still bad {", "also bad {"),
     )
     result = await run_measure_analysis(_MEASURE_SUMMARY, ["housing"], "unused.db")
     assert result is None
@@ -259,8 +259,8 @@ async def test_measure_analyst_returns_none_after_3_failures(monkeypatch):
 async def test_measure_analyst_always_has_both_arguments(monkeypatch):
     _patch_measure_mcp(monkeypatch)
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.measure_analyst.call_claude",
-        _make_call_claude_sequence(_MEASURE_VALID_JSON),
+        "apps.api.orchestrator.stages.measure_analyst.call_llm",
+        _make_call_llm_sequence(_MEASURE_VALID_JSON),
     )
     result = await run_measure_analysis(_MEASURE_SUMMARY, ["economy"], "unused.db")
     assert result is not None
@@ -281,8 +281,8 @@ async def test_candidate_analyst_assembles_race_from_candidates(monkeypatch):
             _noop_mcp,
         )
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.candidate_analyst.call_claude",
-        _make_call_claude_sequence(_CANDIDATE_VALID_JSON, _CANDIDATE_VALID_JSON),
+        "apps.api.orchestrator.stages.candidate_analyst.call_llm",
+        _make_call_llm_sequence(_CANDIDATE_VALID_JSON, _CANDIDATE_VALID_JSON),
     )
     race = RaceSummary(
         id="R-GOV",
@@ -326,8 +326,8 @@ def _make_measure(measure_id: str) -> MeasureAnalysis:
 @pytest.mark.asyncio
 async def test_relevance_ranker_removes_outcome_preference_language(monkeypatch):
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.relevance_ranker.call_claude",
-        _make_call_claude_sequence(_SCORES_WITH_FORBIDDEN),
+        "apps.api.orchestrator.stages.relevance_ranker.call_llm",
+        _make_call_llm_sequence(_SCORES_WITH_FORBIDDEN),
     )
     measures = [_make_measure("FL-2022-M1")]
     result = await run_relevance_ranking(measures, [], ["housing"])
@@ -337,8 +337,8 @@ async def test_relevance_ranker_removes_outcome_preference_language(monkeypatch)
 @pytest.mark.asyncio
 async def test_relevance_ranker_sorts_by_score_descending(monkeypatch):
     monkeypatch.setattr(
-        "apps.api.orchestrator.stages.relevance_ranker.call_claude",
-        _make_call_claude_sequence(_SCORES_JSON_UNSORTED),
+        "apps.api.orchestrator.stages.relevance_ranker.call_llm",
+        _make_call_llm_sequence(_SCORES_JSON_UNSORTED),
     )
     measures = [_make_measure("FL-2022-M1"), _make_measure("FL-2022-M2")]
     result = await run_relevance_ranking(measures, [], ["housing", "taxes"])

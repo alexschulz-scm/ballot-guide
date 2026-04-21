@@ -1,29 +1,64 @@
-Codemap Generation Report — 2026-03-27
-========================================
+Codemap Update — 2026-04-20
+============================
 
-Status: INITIAL GENERATION (no previous codemaps existed)
+Scope: Gemini migration Slice 2 (LLM client swap).
+Diff size: <10% per file (updated in place, no user approval needed).
 
-Files Generated:
-  docs/CODEMAPS/architecture.md  — System diagram, data flow, key boundaries
-  docs/CODEMAPS/backend.md       — API routes, orchestrator pipeline, key files
-  docs/CODEMAPS/frontend.md      — Page tree, component hierarchy, hooks, lib
-  docs/CODEMAPS/data.md          — Database schema, migrations, cache strategy
-  docs/CODEMAPS/dependencies.md  — MCP tools, external APIs, packages, mock flags
+Files Modified
+--------------
+docs/CODEMAPS/architecture.md   — 4 edits
+docs/CODEMAPS/backend.md        — 4 edits
+docs/CODEMAPS/dependencies.md   — 3 edits
+docs/CODEMAPS/data.md           — unchanged
+docs/CODEMAPS/frontend.md       — unchanged
 
-Metrics:
-  Total lines: 391
-  Estimated tokens: ~3,850 (all 5 files combined)
-  Source files scanned: 95+ (Python, TypeScript, SQL, JSON)
+Codebase Changes Since Last Scan (2026-03-27)
+---------------------------------------------
+Added:
+  + apps/api/orchestrator/llm_client.py       (Gemini-backed, replaces claude_client.py)
+  + tests/orchestrator/test_llm_client.py
+  + tests/orchestrator/test_llm_client_security.py
+  + tests/fixtures/llm/mock_response.json
+  + docs/migrations/gemini/slice-*.md         (7 migration slice specs)
 
-Project Summary:
-  Languages: Python (backend), TypeScript (frontend)
-  Frameworks: FastAPI, Next.js 16, React 19
-  Database: SQLite (aiosqlite, WAL mode)
-  AI: Claude Sonnet via Anthropic SDK (5-stage orchestrator)
-  MCP Servers: 3 (ballot_data, legislation, news) with 8 tools total
-  External APIs: 7 (Anthropic, Google Civic, NewsAPI, OpenFEC, FL DoE, FL Legislature, Ballotpedia)
-  Test files: 41 (28 Python + 13 TypeScript)
+Removed:
+  - apps/api/orchestrator/claude_client.py    (superseded)
+  - tests/orchestrator/test_claude_client.py
+  - tests/orchestrator/test_claude_client_security.py
 
-Architecture Changes Since Last Scan: N/A (first generation)
+Renamed symbols (in-place edits):
+  call_claude          -> call_llm           (5 stage files)
+  ClaudeError          -> LLMError           (llm_client.py)
+  MOCK_CLAUDE env var  -> MOCK_LLM           (llm_client.py runtime check)
 
-Staleness Warnings: None (all files freshly scanned)
+Architecture Changes
+--------------------
+  * LLM provider: Anthropic Claude (claude-sonnet-4-6) -> Google Gemini (gemini-2.5-flash)
+  * SDK: anthropic -> google-genai
+  * Model now read per-call from settings.GEMINI_MODEL (not module-level constant)
+  * Temperature still hardcoded at 0.1 (CLAUDE.md rule)
+  * Token-usage log format preserved: "token_usage input=%d output=%d"
+
+New Dependencies
+----------------
+  + google-genai ~= 1.73.1   (primary LLM SDK)
+  (anthropic ~= 0.84.0 retained until Slice 3 — still required by config.py)
+  + slowapi ~= 0.1.9         (newly documented — rate limiting, was undocumented)
+
+Pending Slices (not yet applied)
+--------------------------------
+  Slice 3: decommission anthropic    — remove ANTHROPIC_API_KEY, MOCK_CLAUDE, anthropic dep
+  Slice 4: infra + CI                — Azure Key Vault wiring, GitHub Actions secrets
+  Slice 5: structured output         — switch to Gemini response_schema (JSON mode)
+  Slice 6: prompt validation         — tune prompts for Gemini output style
+  Slice 7: docs + rules              — CLAUDE.md rewrite, neutrality tests rerun
+
+Staleness Warnings
+------------------
+  None — all codemaps regenerated within 30 days.
+
+Verification
+------------
+  Test suite: 272/272 passing with MOCK_LLM=true
+  grep "claude_client|call_claude|ClaudeError" apps/ tests/ -> CLEAN
+  grep "import anthropic|from anthropic" apps/               -> CLEAN

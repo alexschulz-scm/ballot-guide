@@ -13,7 +13,7 @@ import re
 
 from mcp_servers.shared.models import ToolError
 
-from apps.api.orchestrator.claude_client import call_claude, load_prompt
+from apps.api.orchestrator.llm_client import call_llm, load_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ async def run_follow_up(
         .replace("{message}", message)
     )
     messages = [{"role": "user", "content": formatted}]
-    answer = await call_claude(system_prompt, messages, max_tokens=1000)
+    answer = await call_llm(system_prompt, messages, max_tokens=1000)
     return answer, sources_used
 
 

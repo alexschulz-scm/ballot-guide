@@ -4,9 +4,9 @@ Stage 3b: Candidate Analyst — fetch data and analyze all candidates in one rac
 import logging
 from datetime import datetime, timezone
 
-from apps.api.orchestrator.claude_client import (
+from apps.api.orchestrator.llm_client import (
     SchemaValidationError,
-    call_claude,
+    call_llm,
     load_prompt,
     parse_json_response,
 )
@@ -100,7 +100,7 @@ async def _analyze_one_candidate(
 
     for attempt in range(3):
         try:
-            response = await call_claude(system_prompt, messages, max_tokens=800)
+            response = await call_llm(system_prompt, messages, max_tokens=800)
             result = await parse_json_response(response, CandidateAnalysis)
             _ensure_news_sources(result, news_result)
             return result

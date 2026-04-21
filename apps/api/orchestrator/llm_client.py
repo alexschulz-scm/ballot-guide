@@ -1,15 +1,15 @@
 """
-Thin wrapper around the Anthropic SDK for the orchestrator.
+Thin wrapper around the Google Gemini SDK for the orchestrator.
 
-All Claude API calls go through this module — nowhere else.
+All LLM API calls go through this module — nowhere else.
 Temperature is fixed at 0.1 (CLAUDE.md rule — not configurable per call).
-Checks MOCK_CLAUDE=true before making any real API calls.
+Checks MOCK_LLM=true before making any real API calls.
 
 Exports:
-    call_claude       — async, calls Claude Sonnet or returns mock
-    parse_json_response — async, strips fences + validates against Pydantic schema
-    load_prompt       — sync, loads .txt file from prompts/ directory
-    ClaudeError       — raised on API failure
+    call_llm              — async, calls Gemini or returns mock
+    parse_json_response   — async, strips fences + validates against Pydantic schema
+    load_prompt           — sync, loads .txt file from prompts/ directory
+    LLMError              — raised on API failure
     SchemaValidationError — raised on JSON parse or schema validation failure
 """
 
@@ -27,23 +27,20 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-_MODEL = "claude-sonnet-4-6"
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
-_MOCK_FIXTURES_DIR = (
-    Path(__file__).parent.parent.parent.parent / "tests" / "fixtures" / "claude"
-)
+_MOCK_FIXTURES_DIR = Path(__file__).parents[3] / "tests" / "fixtures" / "llm"
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
 # ---------------------------------------------------------------------------
 
 
-class ClaudeError(Exception):
-    """Raised when the Claude API call fails. Never wraps raw Anthropic exceptions."""
+class LLMError(Exception):
+    """Raised when the LLM API call fails. Never wraps raw SDK exceptions."""
 
 
 class SchemaValidationError(Exception):
-    """Raised when Claude's response cannot be parsed into the expected schema."""
+    """Raised when the LLM's response cannot be parsed into the expected schema."""
 
 
 # ---------------------------------------------------------------------------
@@ -51,16 +48,16 @@ class SchemaValidationError(Exception):
 # ---------------------------------------------------------------------------
 
 
-async def call_claude(
+async def call_llm(
     system_prompt: str,
     messages: list[dict],
     max_tokens: int = 4000,
     _mock_file: str | None = None,
 ) -> str:
     """
-    Call Claude Sonnet and return the response text.
+    Call Gemini and return the response text.
     Temperature is always 0.1 (fixed per CLAUDE.md).
-    Raises ClaudeError on API failure.
+    Raises LLMError on API failure.
     """
     if _is_mock_mode():
         text = _load_mock_response(_mock_file)
@@ -70,31 +67,44 @@ async def call_claude(
     return await _call_real_api(system_prompt, messages, max_tokens)
 
 
-async def _call_real_api(system_prompt, messages, max_tokens):
-    """Make a real Anthropic API call. Raises ClaudeError on failure."""
+async def _call_real_api(system_prompt: str, messages: list[dict], max_tokens: int) -> str:
+    """Make a real Gemini API call. Raises LLMError on failure."""
     try:
-        import anthropic  # deferred — only needed for real API calls
+        from google import genai
+        from google.genai import errors, types
     except ImportError as exc:
-        raise ClaudeError("anthropic package not installed") from exc
+        raise LLMError("google-genai package not installed") from exc
 
     try:
         from apps.api.config import settings
 
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = await client.messages.create(
-            model=_MODEL, max_tokens=max_tokens, temperature=0.1,
-            system=system_prompt, messages=messages,
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        contents = [
+            {
+                "role": "model" if m["role"] == "assistant" else m["role"],
+                "parts": [{"text": m["content"]}],
+            }
+            for m in messages
+        ]
+        response = await client.aio.models.generate_content(
+            model=settings.GEMINI_MODEL,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.1,
+                max_output_tokens=max_tokens,
+            ),
         )
-        usage = response.usage
         logger.info(
             "token_usage input=%d output=%d",
-            usage.input_tokens, usage.output_tokens,
+            response.usage_metadata.prompt_token_count,
+            response.usage_metadata.candidates_token_count,
         )
-        return response.content[0].text
-    except anthropic.APIError as exc:
-        raise ClaudeError(f"Anthropic API error: {exc}") from exc
+        return response.text
+    except (errors.APIError, errors.ClientError) as exc:
+        raise LLMError(f"Gemini API error: {exc}") from exc
     except Exception as exc:
-        raise ClaudeError(f"Unexpected error calling Claude: {exc}") from exc
+        raise LLMError(f"Unexpected error calling Gemini: {exc}") from exc
 
 
 async def parse_json_response(
@@ -102,7 +112,7 @@ async def parse_json_response(
     schema: type[BaseModel],
 ) -> BaseModel:
     """
-    Parse Claude's response text as JSON and validate against a Pydantic schema.
+    Parse the LLM's response as JSON and validate against a Pydantic schema.
 
     Strips markdown code fences (```json ... ```) before parsing.
     Raises SchemaValidationError — never raw JSONDecodeError or ValidationError.
@@ -113,7 +123,7 @@ async def parse_json_response(
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise SchemaValidationError(
-            f"Invalid JSON from Claude: {exc}\nResponse: {text[:300]}"
+            f"Invalid JSON from LLM: {exc}\nResponse: {text[:300]}"
         ) from exc
 
     try:
@@ -147,12 +157,13 @@ def load_prompt(prompt_name: str) -> str:
 
 
 def _is_mock_mode() -> bool:
-    return os.environ.get("MOCK_CLAUDE", "false").lower() == "true"
+    return os.environ.get("MOCK_LLM", "false").lower() == "true"
 
 
 def _load_mock_response(mock_file: str | None) -> str:
-    if mock_file:
-        return (_MOCK_FIXTURES_DIR / mock_file).read_text(encoding="utf-8")
+    path = _MOCK_FIXTURES_DIR / (mock_file or "mock_response.json")
+    if path.exists():
+        return path.read_text(encoding="utf-8").strip()
     return '{"mock": true}'
 
 

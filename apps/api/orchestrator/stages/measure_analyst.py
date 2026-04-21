@@ -4,9 +4,9 @@ Stage 3a: Measure Analyst — fetch data and analyze one ballot measure via Clau
 import logging
 from datetime import datetime, timezone
 
-from apps.api.orchestrator.claude_client import (
+from apps.api.orchestrator.llm_client import (
     SchemaValidationError,
-    call_claude,
+    call_llm,
     load_prompt,
     parse_json_response,
 )
@@ -52,7 +52,7 @@ async def run_measure_analysis(
 
     for attempt in range(3):
         try:
-            response = await call_claude(system_prompt, messages, max_tokens=1200)
+            response = await call_llm(system_prompt, messages, max_tokens=1200)
             result = await parse_json_response(response, MeasureAnalysis)
             _ensure_news_sources(result, data.get("news_result"))
             return result

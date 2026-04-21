@@ -1,10 +1,10 @@
 """
-Tests for claude_client security hardening: path traversal guard, mock loading.
+Tests for llm_client security hardening: path traversal guard, mock loading.
 """
 
 import pytest
 
-from apps.api.orchestrator.claude_client import (
+from apps.api.orchestrator.llm_client import (
     SchemaValidationError,
     _strip_code_fences,
     load_prompt,
