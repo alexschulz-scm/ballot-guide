@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
-    # Anthropic (passed to orchestrator)
-    ANTHROPIC_API_KEY: str
+    # Gemini (LLM for orchestrator)
+    GEMINI_API_KEY: str
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # External APIs (passed to MCP servers)
     GOOGLE_CIVIC_API_KEY: str
@@ -33,7 +34,7 @@ class Settings(BaseSettings):
 
     # Development — master mock override
     MOCK_EXTERNAL_APIS: bool = False
-    MOCK_CLAUDE: bool = False
+    MOCK_LLM: bool = False
 
     # Per-source mock flags (checked when MOCK_EXTERNAL_APIS=false)
     MOCK_CIVIC_API: bool = False
@@ -50,7 +51,7 @@ class Settings(BaseSettings):
         Pydantic already validates presence; this logs confirmation.
         """
         required_keys = [
-            "ANTHROPIC_API_KEY",
+            "GEMINI_API_KEY",
             "GOOGLE_CIVIC_API_KEY",
             "NEWSAPI_KEY",
             "OPENFEC_API_KEY",
@@ -62,11 +63,10 @@ class Settings(BaseSettings):
             else:
                 logger.warning("Config: %s is EMPTY", key)
         logger.info(
-            "Config: DB_PATH=%s, LOG_LEVEL=%s, MOCK_CLAUDE=%s, "
-            "MOCK_EXTERNAL_APIS=%s",
+            "Config: DB_PATH=%s, LOG_LEVEL=%s, MOCK_LLM=%s, MOCK_EXTERNAL_APIS=%s",
             self.DB_PATH,
             self.LOG_LEVEL,
-            self.MOCK_CLAUDE,
+            self.MOCK_LLM,
             self.MOCK_EXTERNAL_APIS,
         )
 
