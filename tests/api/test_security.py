@@ -5,11 +5,11 @@ config validation, elections router, and input validators.
 
 import os
 
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ.setdefault("GEMINI_API_KEY", "test-key")
 os.environ.setdefault("GOOGLE_CIVIC_API_KEY", "test-key")
 os.environ.setdefault("NEWSAPI_KEY", "test-key")
 os.environ.setdefault("OPENFEC_API_KEY", "test-key")
-os.environ.setdefault("MOCK_CLAUDE", "true")
+os.environ.setdefault("MOCK_LLM", "true")
 os.environ.setdefault("MOCK_EXTERNAL_APIS", "true")
 
 import pytest
@@ -179,7 +179,7 @@ def test_config_validate_required_logs_loaded(caplog):
     import logging
     with caplog.at_level(logging.INFO, logger="apps.api.config"):
         settings.validate_required()
-    for key in ["ANTHROPIC_API_KEY", "GOOGLE_CIVIC_API_KEY", "NEWSAPI_KEY", "OPENFEC_API_KEY"]:
+    for key in ["GEMINI_API_KEY", "GOOGLE_CIVIC_API_KEY", "NEWSAPI_KEY", "OPENFEC_API_KEY"]:
         assert any(f"{key} = <loaded>" in rec.message for rec in caplog.records), (
             f"{key} not logged as <loaded>"
         )

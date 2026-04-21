@@ -14,11 +14,11 @@ Provides:
 import os
 
 # Set test env vars BEFORE any app imports
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ.setdefault("GEMINI_API_KEY", "test-key")
+os.environ.setdefault("MOCK_LLM", "true")
 os.environ.setdefault("GOOGLE_CIVIC_API_KEY", "test-key")
 os.environ.setdefault("NEWSAPI_KEY", "test-key")
 os.environ.setdefault("OPENFEC_API_KEY", "test-key")
-os.environ.setdefault("MOCK_CLAUDE", "true")
 os.environ.setdefault("MOCK_EXTERNAL_APIS", "true")
 os.environ.setdefault("CORS_ORIGINS", '["http://localhost:3000"]')
 

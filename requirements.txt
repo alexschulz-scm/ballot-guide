@@ -16,10 +16,10 @@ pydantic~=2.9.0
 pydantic-settings~=2.6.0
 
 # HTTP client (used by MCP source clients)
-httpx~=0.27.0
+httpx~=0.28.0
 
-# AI / Claude SDK
-anthropic~=0.84.0
+# AI / LLM SDKs
+google-genai~=1.73.1
 
 # MCP protocol
 mcp~=1.0.0

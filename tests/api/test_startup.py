@@ -1,7 +1,7 @@
 """
 Tests for application startup sequence.
 
-Covers AC-17 (fails without ANTHROPIC_API_KEY) and AC-18 (WAL mode).
+Covers AC-17 (fails without GEMINI_API_KEY) and AC-18 (WAL mode).
 """
 
 import os
@@ -12,27 +12,27 @@ from apps.api.db.connection import get_db, run_migrations
 
 
 @pytest.mark.asyncio
-async def test_startup_fails_without_anthropic_api_key():
-    """AC-17: Application fails to start if ANTHROPIC_API_KEY is missing."""
+async def test_startup_fails_without_gemini_api_key():
+    """AC-17: Application fails to start if GEMINI_API_KEY is missing."""
     from pydantic import ValidationError
     from pydantic_settings import BaseSettings, SettingsConfigDict
 
     # Define a fresh Settings class identical to the real one
     class TestSettings(BaseSettings):
         model_config = SettingsConfigDict(env_file="")
-        ANTHROPIC_API_KEY: str
+        GEMINI_API_KEY: str
         GOOGLE_CIVIC_API_KEY: str = "test"
         NEWSAPI_KEY: str = "test"
         OPENFEC_API_KEY: str = "test"
 
     # Temporarily remove the key from environment
-    original = os.environ.pop("ANTHROPIC_API_KEY", None)
+    original = os.environ.pop("GEMINI_API_KEY", None)
     try:
         with pytest.raises(ValidationError):
             TestSettings()
     finally:
         if original is not None:
-            os.environ["ANTHROPIC_API_KEY"] = original
+            os.environ["GEMINI_API_KEY"] = original
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_startup_succeeds_with_all_env_vars():
     """Settings singleton loads successfully with test env vars."""
     from apps.api.config import settings
 
-    assert settings.ANTHROPIC_API_KEY
+    assert settings.GEMINI_API_KEY
     assert settings.GOOGLE_CIVIC_API_KEY
     assert settings.NEWSAPI_KEY
     assert settings.OPENFEC_API_KEY
