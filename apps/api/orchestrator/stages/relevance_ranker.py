@@ -8,8 +8,9 @@ from apps.api.orchestrator.llm_client import (
     SchemaValidationError,
     call_llm,
     load_prompt,
+    parse_json_response,
 )
-from apps.api.orchestrator.schemas import MeasureAnalysis, RaceAnalysis, RelevanceScore
+from apps.api.orchestrator.schemas import MeasureAnalysis, RaceAnalysis, RelevanceRanking, RelevanceScore
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +52,11 @@ async def run_relevance_ranking(
 
     for attempt in range(3):
         try:
-            response = await call_llm(system_prompt, messages, max_tokens=800)
-            return _scrub_scores(_parse_scores(response))
+            response = await call_llm(
+                system_prompt, messages, max_tokens=800, response_schema=RelevanceRanking
+            )
+            parsed = await parse_json_response(response, RelevanceRanking)
+            return _scrub_scores(parsed.scores)
         except SchemaValidationError as exc:
             if attempt == 2:
                 logger.error("All retries failed for relevance ranking: %s", exc)
@@ -76,26 +80,6 @@ def _build_items_json(measures: list[MeasureAnalysis], races: list[RaceAnalysis]
         for r in races
     ]
     return json.dumps(items)
-
-
-def _parse_scores(response_text: str) -> list[RelevanceScore]:
-    """Parse Claude's JSON array response into RelevanceScore objects."""
-    text = response_text.strip()
-    # Strip code fences if present
-    if text.startswith("```"):
-        lines = text.splitlines()
-        text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-        text = text.strip()
-    try:
-        raw_list = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise SchemaValidationError(f"Invalid JSON array from Claude: {exc}") from exc
-    if not isinstance(raw_list, list):
-        raise SchemaValidationError("Expected JSON array from Claude, got object")
-    try:
-        return [RelevanceScore.model_validate(item) for item in raw_list]
-    except Exception as exc:
-        raise SchemaValidationError(f"RelevanceScore validation failed: {exc}") from exc
 
 
 def _scrub_reason(reason: str, item_id: str) -> str:

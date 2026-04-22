@@ -20,7 +20,6 @@
 | API | Env Var | Used By | Purpose |
 |-----|---------|---------|---------|
 | Google Gemini | GEMINI_API_KEY, GEMINI_MODEL | llm_client.py | AI reasoning (temp=0.1, gemini-2.5-flash) |
-| Anthropic Claude | ANTHROPIC_API_KEY | (deprecated — removed in Slice 3) | legacy, still required by config |
 | Google Civic | GOOGLE_CIVIC_API_KEY | sources/civic.py | Voter info, ballot lookup |
 | NewsAPI | NEWSAPI_KEY | sources/newsapi.py | News article search |
 | OpenFEC | OPENFEC_API_KEY | sources/openfec.py | Federal campaign finance |
@@ -64,4 +63,4 @@ Master: `MOCK_EXTERNAL_APIS=true` overrides all per-source flags.
 
 Per-source: MOCK_CIVIC_API, MOCK_OPENFEC_API, MOCK_FL_FINANCE_API, MOCK_BALLOTPEDIA_API, MOCK_FL_ELECTIONS_API, MOCK_NEWSAPI, MOCK_LEGISLATION_API
 
-LLM mock: `MOCK_LLM=true` bypasses Gemini API (loads tests/fixtures/llm/mock_response.json). `MOCK_CLAUDE` is retained until Slice 3 but no longer consulted by llm_client.py.
+LLM mock: `MOCK_LLM=true` bypasses Gemini API (loads tests/fixtures/llm/mock_response.json).

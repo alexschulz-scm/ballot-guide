@@ -100,7 +100,7 @@ async def _analyze_one_candidate(
 
     for attempt in range(3):
         try:
-            response = await call_llm(system_prompt, messages, max_tokens=800)
+            response = await call_llm(system_prompt, messages, max_tokens=800, response_schema=CandidateAnalysis)
             result = await parse_json_response(response, CandidateAnalysis)
             _ensure_news_sources(result, news_result)
             return result

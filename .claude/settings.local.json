@@ -13,7 +13,7 @@
       "Bash(python -c \"import anthropic; print\\(anthropic.__version__\\)\")",
       "Bash(pip install anthropic)",
       "Bash(python -c \"import anthropic; print\\(''anthropic'', anthropic.__version__\\)\")",
-      "Bash(MOCK_CLAUDE=true MOCK_EXTERNAL_APIS=true pytest tests/mcp_servers/ tests/orchestrator/ -v)",
+      "Bash(MOCK_LLM=true MOCK_EXTERNAL_APIS=true pytest tests/mcp_servers/ tests/orchestrator/ -v)",
       "Bash(MOCK_EXTERNAL_APIS=true pytest tests/orchestrator/test_stages.py -v)",
       "Bash(python -c \"from pydantic_settings import BaseSettings; print\\(''pydantic-settings OK''\\)\")",
       "Bash(python -m pytest tests/api/test_session_store.py -v)",

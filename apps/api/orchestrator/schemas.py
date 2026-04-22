@@ -188,6 +188,12 @@ class BallotReportItem(BaseModel):
     race: RaceAnalysis | None        # populated if item_type == "race"
 
 
+class RelevanceRanking(BaseModel):
+    """Wrapper for relevance ranker array response (google-genai requires a BaseModel, not a bare list)."""
+
+    scores: list[RelevanceScore]
+
+
 class BallotReport(BaseModel):
     """
     Final output of the orchestrator — the complete voter ballot guide.

@@ -236,7 +236,7 @@ infra/
                     └─────────────────────┘
 ```
 
-- **Test job:** `pytest tests/ -v` with `MOCK_EXTERNAL_APIS=true MOCK_CLAUDE=true`
+- **Test job:** `pytest tests/ -v` with `MOCK_EXTERNAL_APIS=true MOCK_LLM=true`
 - **Image tags:** `{git-sha-7-chars}` + `latest`
 - **Auth:** Azure service principal (`AZURE_CREDENTIALS` secret)
 
@@ -251,7 +251,7 @@ Runs seed scripts inside the running API container via `az containerapp exec`. W
 | Secret | Purpose |
 |--------|---------|
 | `AZURE_CREDENTIALS` | Service principal JSON (clientId, clientSecret, subscriptionId, tenantId) |
-| `ANTHROPIC_API_KEY` | Claude API access |
+| `GEMINI_API_KEY` | Gemini API access |
 | `GOOGLE_CIVIC_API_KEY` | Google Civic Information API |
 | `NEWSAPI_KEY` | News search |
 | `OPENFEC_API_KEY` | Campaign finance data |

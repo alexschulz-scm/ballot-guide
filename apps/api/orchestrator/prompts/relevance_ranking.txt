@@ -1,5 +1,5 @@
 Score each ballot item for relevance to the user's stated priorities.
-Return a JSON array of RelevanceScore objects.
+Return a JSON object with a "scores" array of RelevanceScore objects.
 
 User priorities: {priorities}
 
@@ -19,22 +19,24 @@ Ballot items:
 OUTPUT FORMAT:
 Return ONLY valid JSON matching the schema below.
 No prose. No markdown. No code fences. No explanation.
-Start your response with [ and end with ].
+Start your response with { and end with }.
 
 Schema:
-[
-  {
-    "item_id": "FL-2022-M2",
-    "item_type": "measure",
-    "relevance_score": 8,
-    "relevance_reason": "This measure sets statewide minimum wage rates, directly affecting economy and employment.",
-    "matched_priorities": ["economy", "taxes"]
-  },
-  {
-    "item_id": "FL-2022-R1",
-    "item_type": "race",
-    "relevance_score": 5,
-    "relevance_reason": "The Governor race involves education funding and infrastructure spending decisions.",
-    "matched_priorities": ["education", "infrastructure"]
-  }
-]
+{
+  "scores": [
+    {
+      "item_id": "FL-2022-M2",
+      "item_type": "measure",
+      "relevance_score": 8,
+      "relevance_reason": "This measure sets statewide minimum wage rates, directly affecting economy and employment.",
+      "matched_priorities": ["economy", "taxes"]
+    },
+    {
+      "item_id": "FL-2022-R1",
+      "item_type": "race",
+      "relevance_score": 5,
+      "relevance_reason": "The Governor race involves education funding and infrastructure spending decisions.",
+      "matched_priorities": ["education", "infrastructure"]
+    }
+  ]
+}

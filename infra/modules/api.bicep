@@ -10,7 +10,7 @@ param corsOrigins string = '["https://ballot-guide.azurecontainerapps.io"]'
 
 // Secrets
 @secure()
-param anthropicApiKey string
+param geminiApiKey string
 @secure()
 param googleCivicApiKey string
 @secure()
@@ -38,7 +38,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
       ]
       secrets: [
         { name: 'acr-password', value: registryPassword }
-        { name: 'anthropic-api-key', value: anthropicApiKey }
+        { name: 'gemini-api-key', value: geminiApiKey }
         { name: 'google-civic-api-key', value: googleCivicApiKey }
         { name: 'newsapi-key', value: newsapiKey }
         { name: 'openfec-api-key', value: openfecApiKey }
@@ -58,10 +58,10 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'LOG_LEVEL', value: 'INFO' }
             { name: 'APP_VERSION', value: '1.0.0' }
             { name: 'MOCK_EXTERNAL_APIS', value: 'false' }
-            { name: 'MOCK_CLAUDE', value: 'false' }
+            { name: 'MOCK_LLM', value: 'false' }
             { name: 'MOCK_CIVIC_API', value: 'true' }
             { name: 'CORS_ORIGINS', value: corsOrigins }
-            { name: 'ANTHROPIC_API_KEY', secretRef: 'anthropic-api-key' }
+            { name: 'GEMINI_API_KEY', secretRef: 'gemini-api-key' }
             { name: 'GOOGLE_CIVIC_API_KEY', secretRef: 'google-civic-api-key' }
             { name: 'NEWSAPI_KEY', secretRef: 'newsapi-key' }
             { name: 'OPENFEC_API_KEY', secretRef: 'openfec-api-key' }

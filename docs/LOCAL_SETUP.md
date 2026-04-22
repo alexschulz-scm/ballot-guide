@@ -32,8 +32,9 @@ cp .env.example .env
 Edit `.env` with your keys:
 
 ```bash
-# ─── Anthropic ───────────────────────────────
-ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE
+# ─── Google Gemini ───────────────────────────
+GEMINI_API_KEY=YOUR_KEY_HERE
+GEMINI_MODEL=gemini-2.0-flash
 
 # ─── External APIs (MCP servers) ─────────────
 GOOGLE_CIVIC_API_KEY=YOUR_KEY_HERE
@@ -50,7 +51,7 @@ CORS_ORIGINS=["http://localhost:3000"]
 
 # ─── Development ─────────────────────────────
 MOCK_EXTERNAL_APIS=false
-MOCK_CLAUDE=false
+MOCK_LLM=false
 
 # ─── Per-source mock overrides ───────────────
 # Only checked when MOCK_EXTERNAL_APIS=false.
@@ -281,7 +282,7 @@ ballot-guide/
 ## Troubleshooting
 
 **App crashes on startup with missing key error**
-All API keys are required. Check `.env` has values for `ANTHROPIC_API_KEY`,
+All API keys are required. Check `.env` has values for `GEMINI_API_KEY`,
 `GOOGLE_CIVIC_API_KEY`, `NEWSAPI_KEY`, and `OPENFEC_API_KEY`.
 
 **Frontend shows blank page / network errors**

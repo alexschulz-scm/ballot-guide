@@ -85,8 +85,9 @@ ballot-guide/
 All required. The app will not start without them.
 
 ```bash
-# Anthropic
-ANTHROPIC_API_KEY=
+# Google Gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.0-flash
 
 # Google Civic
 GOOGLE_CIVIC_API_KEY=

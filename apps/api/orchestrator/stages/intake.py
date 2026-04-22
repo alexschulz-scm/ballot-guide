@@ -32,7 +32,7 @@ async def run_intake(
         .replace("{message}", message)
     )
     messages = [{"role": "user", "content": formatted}]
-    response = await call_llm(system_prompt, messages, max_tokens=400)
+    response = await call_llm(system_prompt, messages, max_tokens=400, response_schema=IntakeResult)
     result = await parse_json_response(response, IntakeResult)
     return _post_process(result)
 

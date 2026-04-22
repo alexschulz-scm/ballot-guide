@@ -1,7 +1,7 @@
 // Ballot Guide — Azure Container Apps deployment
 // Deploy: az deployment group create -g ballot-guide-rg -f infra/main.bicep
 //         --parameters envName=dev location=eastus
-//         --parameters anthropicApiKey=<val> googleCivicApiKey=<val> ...
+//         --parameters geminiApiKey=<val> googleCivicApiKey=<val> ...
 
 targetScope = 'resourceGroup'
 
@@ -12,7 +12,7 @@ param apiImageTag string = 'latest'
 param webImageTag string = 'latest'
 
 @secure()
-param anthropicApiKey string
+param geminiApiKey string
 @secure()
 param googleCivicApiKey string
 @secure()
@@ -47,7 +47,7 @@ module api 'modules/api.bicep' = {
     registryName: registry.outputs.name
     registryPassword: registry.outputs.password
     apiImageTag: apiImageTag
-    anthropicApiKey: anthropicApiKey
+    geminiApiKey: geminiApiKey
     googleCivicApiKey: googleCivicApiKey
     newsapiKey: newsapiKey
     openfecApiKey: openfecApiKey
