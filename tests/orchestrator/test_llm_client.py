@@ -1,5 +1,6 @@
 """Tests for llm_client.py — all use MOCK_LLM=true, no real API calls."""
 import asyncio
+import json
 import logging
 
 import pytest
@@ -8,6 +9,9 @@ from pydantic import BaseModel
 from apps.api.orchestrator.llm_client import (
     LLMError,
     SchemaValidationError,
+    _inline_refs,
+    _prepare_gemini_schema,
+    _strip_additional_properties,
     call_llm,
     load_prompt,
     parse_json_response,
@@ -17,6 +21,20 @@ from apps.api.orchestrator.llm_client import (
 class _SimpleSchema(BaseModel):
     name: str
     count: int
+
+
+def _no_additional_properties(schema: dict) -> bool:
+    """Return True only if additionalProperties is absent at every nesting level."""
+    if "additionalProperties" in schema:
+        return False
+    for v in schema.values():
+        if isinstance(v, dict) and not _no_additional_properties(v):
+            return False
+        if isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict) and not _no_additional_properties(item):
+                    return False
+    return True
 
 
 @pytest.fixture(autouse=False)
@@ -206,3 +224,234 @@ async def test_call_llm_real_api_wraps_unexpected_error(real_api_mode, monkeypat
     _install_fake_genai_client(monkeypatch, raise_exc=RuntimeError("boom"))
     with pytest.raises(LLMError, match="Unexpected error"):
         await call_llm("sys", [{"role": "user", "content": "hi"}])
+
+
+# ---------------------------------------------------------------------------
+# Slice 5: response_schema parameter
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_call_llm_with_schema_sets_mime_and_schema(real_api_mode, monkeypatch):
+    """When response_schema is provided, GenerateContentConfig receives mime + a schema dict."""
+    captured_config = {}
+
+    class _CapturingModels:
+        async def generate_content(self, *, model, contents, config):
+            captured_config["config"] = config
+            return _FakeResponse('{"name": "x", "count": 1}')
+
+    class _CapturingAio:
+        models = _CapturingModels()
+
+    class _CapturingClient:
+        def __init__(self, *args, **kwargs):
+            self.aio = _CapturingAio()
+
+    from google import genai
+    monkeypatch.setattr(genai, "Client", _CapturingClient)
+
+    await call_llm("sys", [{"role": "user", "content": "hi"}], response_schema=_SimpleSchema)
+
+    cfg = captured_config["config"]
+    assert cfg.response_mime_type == "application/json"
+    # Schema is pre-processed: flat dict with no $ref/$defs and no additionalProperties
+    assert isinstance(cfg.response_schema, dict)
+    blob = json.dumps(cfg.response_schema)
+    assert "$ref" not in blob
+    assert "$defs" not in blob
+    assert "additionalProperties" not in blob
+
+
+@pytest.mark.asyncio
+async def test_call_llm_schema_strips_additional_properties(real_api_mode, monkeypatch):
+    """dict[str, str] fields generate additionalProperties — must be stripped for Gemini."""
+    from pydantic import BaseModel
+
+    class _DictField(BaseModel):
+        positions: dict[str, str]
+        name: str
+
+    captured_schema: dict = {}
+
+    class _CapturingModels:
+        async def generate_content(self, *, model, contents, config):
+            captured_schema.update(config.response_schema or {})
+            return _FakeResponse('{"positions": {"housing": "pro-housing"}, "name": "x"}')
+
+    class _CapturingAio:
+        models = _CapturingModels()
+
+    class _CapturingClient:
+        def __init__(self, *args, **kwargs):
+            self.aio = _CapturingAio()
+
+    from google import genai
+    monkeypatch.setattr(genai, "Client", _CapturingClient)
+
+    await call_llm("sys", [{"role": "user", "content": "hi"}], response_schema=_DictField)
+
+    assert _no_additional_properties(captured_schema), (
+        "additionalProperties found in schema passed to Gemini"
+    )
+
+
+@pytest.mark.asyncio
+async def test_call_llm_without_schema_omits_mime_type(real_api_mode, monkeypatch):
+    """Without response_schema, GenerateContentConfig has no response_mime_type."""
+    from google.genai import types
+
+    captured_config = {}
+
+    class _CapturingModels:
+        async def generate_content(self, *, model, contents, config):
+            captured_config["config"] = config
+            return _FakeResponse('{"ok": true}')
+
+    class _CapturingAio:
+        models = _CapturingModels()
+
+    class _CapturingClient:
+        def __init__(self, *args, **kwargs):
+            self.aio = _CapturingAio()
+
+    from google import genai
+    monkeypatch.setattr(genai, "Client", _CapturingClient)
+
+    await call_llm("sys", [{"role": "user", "content": "hi"}])
+
+    cfg = captured_config["config"]
+    assert getattr(cfg, "response_mime_type", None) is None
+
+
+def test_call_llm_mock_mode_unaffected_by_schema(mock_llm):
+    """MOCK_LLM=true returns fixture regardless of response_schema."""
+    result = asyncio.run(
+        call_llm(
+            system_prompt="sys",
+            messages=[{"role": "user", "content": "hi"}],
+            response_schema=_SimpleSchema,
+        )
+    )
+    assert result == '{"mock": true}'
+
+
+# ---------------------------------------------------------------------------
+# _strip_additional_properties unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_strip_additional_properties_removes_top_level():
+    schema = {"type": "object", "additionalProperties": {"type": "string"}}
+    result = _strip_additional_properties(schema)
+    assert "additionalProperties" not in result
+
+
+def test_strip_additional_properties_removes_nested():
+    schema = {
+        "type": "object",
+        "properties": {
+            "positions": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+            }
+        },
+    }
+    _strip_additional_properties(schema)
+    assert "additionalProperties" not in schema["properties"]["positions"]
+
+
+def test_strip_additional_properties_handles_defs():
+    schema = {
+        "$defs": {
+            "PositionMap": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+            }
+        },
+        "properties": {"p": {"$ref": "#/$defs/PositionMap"}},
+    }
+    _strip_additional_properties(schema)
+    assert "additionalProperties" not in schema["$defs"]["PositionMap"]
+
+
+def test_strip_additional_properties_handles_list_items():
+    schema = {
+        "type": "array",
+        "items": [{"type": "object", "additionalProperties": {"type": "string"}}],
+    }
+    _strip_additional_properties(schema)
+    assert "additionalProperties" not in schema["items"][0]
+
+
+def test_strip_additional_properties_noop_when_absent():
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    original = dict(schema)
+    _strip_additional_properties(schema)
+    assert schema == original
+
+
+# ---------------------------------------------------------------------------
+# _inline_refs unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_inline_refs_replaces_ref_with_definition():
+    defs = {"Foo": {"type": "object", "properties": {"x": {"type": "string"}}}}
+    node = {"$ref": "#/$defs/Foo"}
+    result = _inline_refs(node, defs)
+    assert result == {"type": "object", "properties": {"x": {"type": "string"}}}
+
+
+def test_inline_refs_removes_defs_key():
+    schema = {
+        "$defs": {"Bar": {"type": "string"}},
+        "properties": {"b": {"$ref": "#/$defs/Bar"}},
+    }
+    result = _inline_refs(schema, schema.get("$defs", {}))
+    assert "$defs" not in result
+    assert result["properties"]["b"] == {"type": "string"}
+
+
+def test_inline_refs_handles_list_nodes():
+    defs = {"Tag": {"type": "string"}}
+    node = [{"$ref": "#/$defs/Tag"}, {"type": "integer"}]
+    result = _inline_refs(node, defs)
+    assert result == [{"type": "string"}, {"type": "integer"}]
+
+
+def test_inline_refs_noop_on_scalar():
+    assert _inline_refs("hello", {}) == "hello"
+    assert _inline_refs(42, {}) == 42
+
+
+# ---------------------------------------------------------------------------
+# _prepare_gemini_schema integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_prepare_gemini_schema_no_refs_remaining():
+    """The output schema must have no $ref or $defs anywhere."""
+    from apps.api.orchestrator.schemas import CandidateAnalysis
+
+    result = _prepare_gemini_schema(CandidateAnalysis)
+    blob = json.dumps(result)
+    assert "$ref" not in blob
+    assert "$defs" not in blob
+
+
+def test_prepare_gemini_schema_no_additional_properties():
+    """CandidateAnalysis.positions (dict[str, str]) must not produce additionalProperties."""
+    from apps.api.orchestrator.schemas import CandidateAnalysis
+
+    result = _prepare_gemini_schema(CandidateAnalysis)
+    assert _no_additional_properties(result)
+
+
+def test_prepare_gemini_schema_preserves_required_fields():
+    """Required fields on the top-level schema survive the transformation."""
+    from apps.api.orchestrator.schemas import MeasureAnalysis
+
+    result = _prepare_gemini_schema(MeasureAnalysis)
+    assert "properties" in result
+    assert "measure_id" in result.get("properties", {})

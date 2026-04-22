@@ -14,9 +14,11 @@ from apps.api.orchestrator.schemas import (
     BallotReportItem,
     CandidateAnalysis,
     ElectionSummary,
+    IntakeResult,
     MeasureAnalysis,
     PrecinctInfo,
     RaceAnalysis,
+    RelevanceRanking,
     RelevanceScore,
     SourceCitation,
 )
@@ -102,19 +104,19 @@ _CANDIDATE_VALID_JSON = json.dumps({
     "sources": [_SOURCE],
 })
 
-_SCORES_JSON_UNSORTED = json.dumps([
+_SCORES_JSON_UNSORTED = json.dumps({"scores": [
     {"item_id": "FL-2022-M2", "item_type": "measure", "relevance_score": 3,
      "relevance_reason": "Amendment 2 affects tax rates.", "matched_priorities": ["taxes"]},
     {"item_id": "FL-2022-M1", "item_type": "measure", "relevance_score": 8,
      "relevance_reason": "Amendment 1 affects housing supply rules.", "matched_priorities": ["housing"]},
     {"item_id": "R-1", "item_type": "race", "relevance_score": 5,
      "relevance_reason": "Governor race involves education funding.", "matched_priorities": ["education"]},
-])
+]})
 
-_SCORES_WITH_FORBIDDEN = json.dumps([
+_SCORES_WITH_FORBIDDEN = json.dumps({"scores": [
     {"item_id": "FL-2022-M1", "item_type": "measure", "relevance_score": 7,
      "relevance_reason": "This measure would help you save on housing.", "matched_priorities": ["housing"]},
-])
+]})
 
 
 # ---------------------------------------------------------------------------
@@ -402,3 +404,88 @@ def test_report_assembler_items_ordered_by_score():
     assert len(report.items) == 2
     assert report.items[0].relevance_score >= report.items[1].relevance_score
     assert report.items[0].relevance_score == 9
+
+
+# ---------------------------------------------------------------------------
+# Slice 5: response_schema forwarding tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_intake_passes_schema_to_call_llm(monkeypatch):
+    """intake.py must forward response_schema=IntakeResult to call_llm."""
+    captured = {}
+
+    async def _capture_call_llm(*args, **kwargs):
+        captured["response_schema"] = kwargs.get("response_schema")
+        return _INTAKE_VALID_JSON
+
+    monkeypatch.setattr("apps.api.orchestrator.stages.intake.call_llm", _capture_call_llm)
+    await run_intake("I care about housing in Miami 33101", [], "unused.db")
+    assert captured.get("response_schema") is IntakeResult
+
+
+@pytest.mark.asyncio
+async def test_measure_analyst_passes_schema_to_call_llm(monkeypatch):
+    """measure_analyst.py must forward response_schema=MeasureAnalysis and max_tokens=2000."""
+    _patch_measure_mcp(monkeypatch)
+    captured = {}
+
+    async def _capture_call_llm(*args, **kwargs):
+        captured["response_schema"] = kwargs.get("response_schema")
+        captured["max_tokens"] = kwargs.get("max_tokens")
+        return _MEASURE_VALID_JSON
+
+    monkeypatch.setattr("apps.api.orchestrator.stages.measure_analyst.call_llm", _capture_call_llm)
+    await run_measure_analysis(_MEASURE_SUMMARY, ["economy"], "unused.db")
+    assert captured.get("response_schema") is MeasureAnalysis
+    assert captured.get("max_tokens") == 2000, (
+        "max_tokens must be 2000 to handle FL-2024 amendment text length"
+    )
+
+
+@pytest.mark.asyncio
+async def test_candidate_analyst_passes_schema_to_call_llm(monkeypatch):
+    """candidate_analyst.py must forward response_schema=CandidateAnalysis to call_llm."""
+    for name in ["handle_get_candidate_detail", "handle_get_campaign_finance", "handle_search_news"]:
+        monkeypatch.setattr(
+            f"apps.api.orchestrator.stages.candidate_analyst.{name}", _noop_mcp
+        )
+    captured = {}
+
+    async def _capture_call_llm(*args, **kwargs):
+        captured["response_schema"] = kwargs.get("response_schema")
+        return _CANDIDATE_VALID_JSON
+
+    monkeypatch.setattr("apps.api.orchestrator.stages.candidate_analyst.call_llm", _capture_call_llm)
+    race = RaceSummary(id="R-GOV", type="governor", title="Governor", candidate_ids=["C-1"])
+    await run_candidate_analysis(race, ["housing"], "unused.db")
+    assert captured.get("response_schema") is CandidateAnalysis
+
+
+@pytest.mark.asyncio
+async def test_relevance_ranker_passes_schema_to_call_llm(monkeypatch):
+    """relevance_ranker.py must forward response_schema=RelevanceRanking to call_llm."""
+    captured = {}
+
+    async def _capture_call_llm(*args, **kwargs):
+        captured["response_schema"] = kwargs.get("response_schema")
+        return _SCORES_JSON_UNSORTED
+
+    monkeypatch.setattr("apps.api.orchestrator.stages.relevance_ranker.call_llm", _capture_call_llm)
+    await run_relevance_ranking([_make_measure("FL-2022-M1")], [], ["housing"])
+    assert captured.get("response_schema") is RelevanceRanking
+
+
+@pytest.mark.asyncio
+async def test_relevance_ranker_retry_still_fires_on_bad_json(monkeypatch):
+    """Schema validation failure triggers retry; valid response on retry succeeds."""
+    monkeypatch.setattr(
+        "apps.api.orchestrator.stages.relevance_ranker.call_llm",
+        _make_call_llm_sequence("not valid json {{{", _SCORES_JSON_UNSORTED),
+    )
+    measures = [_make_measure("FL-2022-M1"), _make_measure("FL-2022-M2")]
+    result = await run_relevance_ranking(measures, [], ["housing", "taxes"])
+    assert len(result) > 0
+    scores = [r.relevance_score for r in result]
+    assert scores == sorted(scores, reverse=True)

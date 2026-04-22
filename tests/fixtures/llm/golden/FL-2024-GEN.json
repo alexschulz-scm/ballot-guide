@@ -1,0 +1,90 @@
+{
+  "session_id": "neutrality-FL-2024-GEN",
+  "generated_at": "2026-04-22T16:00:01.921989+00:00",
+  "election": {
+    "id": "FL-2024-GEN",
+    "name": "2024 Florida General Election",
+    "date": "2024-11-05",
+    "state": "FL"
+  },
+  "precinct": {
+    "county": "Miami",
+    "district": null,
+    "precinct_id": null
+  },
+  "user_priorities": [
+    "healthcare",
+    "taxes"
+  ],
+  "items": [
+    {
+      "item_type": "measure",
+      "relevance_score": 9,
+      "relevance_reason": "Amendment 6 addresses tax-related issues, directly connecting to the priority of taxes.",
+      "matched_priorities": [
+        "taxes"
+      ],
+      "measure": {
+        "measure_id": "FL-2024-M6",
+        "short_title": "Amendment 6",
+        "plain_english_summary": "Amendment 6 proposes to remove the part of the State Constitution that requires public money to be used for political campaigns for statewide offices. Currently, candidates for positions like Governor can receive public funds if they agree to limit their campaign spending. If this amendment passes, this public financing program would end.",
+        "what_yes_means": "If voters approve Amendment 6, the constitutional requirement for public campaign financing in statewide races will be repealed.",
+        "what_no_means": "If voters reject Amendment 6, the constitutional requirement for public campaign financing in statewide races will remain in effect.",
+        "fiscal_impact": "An indeterminate positive fiscal impact on state government due to elimination of public campaign matching fund expenditures, which have averaged approximately $5 million per election cycle.",
+        "fiscal_impact_source": "https://edr.state.fl.us/Content/constitutional-amendments/2024/Amendment6-Analysis.pdf",
+        "proponent_argument": "Proponents argue that public campaign financing forces taxpayers to fund political campaigns they may disagree with. They contend that the current matching funds program is outdated and ineffective at leveling the playing field for candidates, and that the money currently used for this program would be better spent on other public services.",
+        "opponent_argument": "Opponents argue that public campaign financing helps candidates who are not independently wealthy compete in statewide races. They believe that repealing this program will make elections even more dependent on large donors and special interests, which could reduce electoral competition and accountability to the public.",
+        "proponent_source": "https://dos.myflorida.com/elections/",
+        "opponent_source": "https://dos.myflorida.com/elections/",
+        "topic_tags": [
+          "voting_rights",
+          "taxes"
+        ],
+        "data_completeness": "full",
+        "sources": [
+          {
+            "name": "Florida Division of Elections",
+            "url": "https://dos.myflorida.com/elections/",
+            "bias_rating": null,
+            "bias_source": null,
+            "bias_rating_url": null,
+            "fetched_at": "2024-12-01T00:00:00"
+          },
+          {
+            "name": "Ballotpedia",
+            "url": "https://ballotpedia.org/Florida_Amendment_6,_Repeal_Public_Financing_for_Statewide_Campaigns_Amendment_(2024)",
+            "bias_rating": null,
+            "bias_source": null,
+            "bias_rating_url": null,
+            "fetched_at": "2024-12-01T00:00:00"
+          },
+          {
+            "name": "Florida Legislature Office of Economic and Demographic Research",
+            "url": "https://edr.state.fl.us/Content/constitutional-amendments/2024/Amendment6-Analysis.pdf",
+            "bias_rating": null,
+            "bias_source": null,
+            "bias_rating_url": null,
+            "fetched_at": "2024-12-01T00:00:00Z"
+          },
+          {
+            "name": "Miami Herald",
+            "url": "https://miamiherald.com/news/politics/florida-amendment-2-passes",
+            "bias_rating": "Center",
+            "bias_source": "AllSides",
+            "bias_rating_url": null,
+            "fetched_at": "2026-04-22T15:58:54.908993+00:00"
+          },
+          {
+            "name": "Example Unknown News",
+            "url": "https://example-unknown.com/fl-results-2022",
+            "bias_rating": null,
+            "bias_source": null,
+            "bias_rating_url": null,
+            "fetched_at": "2026-04-22T15:58:54.908993+00:00"
+          }
+        ]
+      },
+      "race": null
+    }
+  ]
+}

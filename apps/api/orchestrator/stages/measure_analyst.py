@@ -52,7 +52,7 @@ async def run_measure_analysis(
 
     for attempt in range(3):
         try:
-            response = await call_llm(system_prompt, messages, max_tokens=1200)
+            response = await call_llm(system_prompt, messages, max_tokens=2000, response_schema=MeasureAnalysis)
             result = await parse_json_response(response, MeasureAnalysis)
             _ensure_news_sources(result, data.get("news_result"))
             return result

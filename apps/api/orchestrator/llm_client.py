@@ -52,11 +52,13 @@ async def call_llm(
     system_prompt: str,
     messages: list[dict],
     max_tokens: int = 4000,
+    response_schema: type[BaseModel] | None = None,
     _mock_file: str | None = None,
 ) -> str:
     """
     Call Gemini and return the response text.
     Temperature is always 0.1 (fixed per CLAUDE.md).
+    When response_schema is provided, Gemini enforces JSON mode at the API level.
     Raises LLMError on API failure.
     """
     if _is_mock_mode():
@@ -64,10 +66,15 @@ async def call_llm(
         logger.info("token_usage mock input=0 output=%d", len(text))
         return text
 
-    return await _call_real_api(system_prompt, messages, max_tokens)
+    return await _call_real_api(system_prompt, messages, max_tokens, response_schema)
 
 
-async def _call_real_api(system_prompt: str, messages: list[dict], max_tokens: int) -> str:
+async def _call_real_api(
+    system_prompt: str,
+    messages: list[dict],
+    max_tokens: int,
+    response_schema: type[BaseModel] | None = None,
+) -> str:
     """Make a real Gemini API call. Raises LLMError on failure."""
     try:
         from google import genai
@@ -86,14 +93,21 @@ async def _call_real_api(system_prompt: str, messages: list[dict], max_tokens: i
             }
             for m in messages
         ]
+        config_kwargs: dict = {
+            "system_instruction": system_prompt,
+            "temperature": 0.1,
+            "max_output_tokens": max_tokens,
+        }
+        if response_schema is not None:
+            config_kwargs["response_mime_type"] = "application/json"
+            # Gemini's dict-mode schema parser does not resolve $ref/$defs and
+            # rejects additionalProperties. Inline all refs and strip that key
+            # before passing.
+            config_kwargs["response_schema"] = _prepare_gemini_schema(response_schema)
         response = await client.aio.models.generate_content(
             model=settings.GEMINI_MODEL,
             contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                temperature=0.1,
-                max_output_tokens=max_tokens,
-            ),
+            config=types.GenerateContentConfig(**config_kwargs),
         )
         logger.info(
             "token_usage input=%d output=%d",
@@ -165,6 +179,47 @@ def _load_mock_response(mock_file: str | None) -> str:
     if path.exists():
         return path.read_text(encoding="utf-8").strip()
     return '{"mock": true}'
+
+
+def _prepare_gemini_schema(schema_class: type[BaseModel]) -> dict:
+    """Convert a Pydantic model to a Gemini-compatible flat JSON schema dict.
+
+    Two transformations required:
+    1. Inline all $ref/$defs — Gemini's dict-mode schema parser does not
+       resolve JSON Schema references; every type must be described inline.
+    2. Strip additionalProperties — produced by dict[K, V] fields; Gemini
+       rejects it.
+    """
+    raw = schema_class.model_json_schema()
+    defs = raw.get("$defs", {})
+    inlined = _inline_refs(raw, defs)
+    _strip_additional_properties(inlined)
+    return inlined
+
+
+def _inline_refs(node: object, defs: dict) -> object:
+    """Recursively replace every {"$ref": "#/$defs/Foo"} with the inlined def."""
+    if isinstance(node, dict):
+        if "$ref" in node:
+            ref_name = node["$ref"].split("/")[-1]
+            return _inline_refs(dict(defs.get(ref_name, {})), defs)
+        return {k: _inline_refs(v, defs) for k, v in node.items() if k != "$defs"}
+    if isinstance(node, list):
+        return [_inline_refs(item, defs) for item in node]
+    return node
+
+
+def _strip_additional_properties(schema: dict) -> dict:
+    """Remove additionalProperties recursively from a JSON schema dict."""
+    schema.pop("additionalProperties", None)
+    for value in schema.values():
+        if isinstance(value, dict):
+            _strip_additional_properties(value)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    _strip_additional_properties(item)
+    return schema
 
 
 def _strip_code_fences(text: str) -> str:

@@ -1,0 +1,20 @@
+{
+  "session_id": "neutrality-FL-2022-GEN",
+  "generated_at": "2026-04-22T15:56:02.082378+00:00",
+  "election": {
+    "id": "FL-2022-GEN",
+    "name": "2022 Florida General Election",
+    "date": "2022-11-08",
+    "state": "FL"
+  },
+  "precinct": {
+    "county": "Miami",
+    "district": null,
+    "precinct_id": null
+  },
+  "user_priorities": [
+    "housing",
+    "education"
+  ],
+  "items": []
+}
