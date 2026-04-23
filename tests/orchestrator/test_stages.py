@@ -182,6 +182,54 @@ async def test_intake_invalid_zip_sets_needs_clarification(monkeypatch):
     assert result.clarification_question
 
 
+@pytest.mark.asyncio
+async def test_intake_empty_priorities_first_turn_asks_clarification(monkeypatch):
+    """Zip but no priorities on first turn → must ask about priorities."""
+    empty_priorities_json = json.dumps({
+        "zip_code": "33101",
+        "address_full": None,
+        "priorities": [],
+        "priorities_raw": "",
+        "display_name": None,
+        "needs_clarification": False,
+        "clarification_question": None,
+    })
+    monkeypatch.setattr(
+        "apps.api.orchestrator.stages.intake.call_llm",
+        _make_call_llm_sequence(empty_priorities_json),
+    )
+    history = [{"role": "user", "content": "33101"}]
+    result = await run_intake("33101", history, "unused.db")
+    assert result.needs_clarification is True
+    assert "issues matter" in (result.clarification_question or "").lower()
+
+
+@pytest.mark.asyncio
+async def test_intake_empty_priorities_after_ask_proceeds(monkeypatch):
+    """Zip + no priorities, but history shows we already asked → accept empty."""
+    empty_priorities_json = json.dumps({
+        "zip_code": "33101",
+        "address_full": None,
+        "priorities": [],
+        "priorities_raw": "no preference",
+        "display_name": None,
+        "needs_clarification": False,
+        "clarification_question": None,
+    })
+    monkeypatch.setattr(
+        "apps.api.orchestrator.stages.intake.call_llm",
+        _make_call_llm_sequence(empty_priorities_json),
+    )
+    history = [
+        {"role": "user", "content": "33101"},
+        {"role": "assistant", "content": "What issues matter most to you?"},
+        {"role": "user", "content": "no preference"},
+    ]
+    result = await run_intake("no preference", history, "unused.db")
+    assert result.needs_clarification is False
+    assert result.priorities == []
+
+
 # ---------------------------------------------------------------------------
 # Ballot resolver tests
 # ---------------------------------------------------------------------------

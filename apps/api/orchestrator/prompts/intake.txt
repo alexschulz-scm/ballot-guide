@@ -11,6 +11,17 @@ If the user's free text doesn't map cleanly, pick the closest match.
 If you cannot extract a zip code, set needs_clarification: true and
 write a friendly question in clarification_question.
 
+If you can extract a zip code but the user has NOT mentioned any priorities
+AND the conversation history does NOT show you already asked about
+priorities, set needs_clarification: true and ask a friendly question like:
+"Thanks! What issues matter most to you? For example: housing, education,
+healthcare, taxes, environment, public safety, economy, voting rights,
+infrastructure, or senior services. You can also say 'no preference' to
+see everything."
+If the history shows you already asked and the user declined to share
+priorities (e.g. "no preference", "all of them", "skip"), return empty
+priorities with needs_clarification: false.
+
 Conversation history:
 {history}
 
