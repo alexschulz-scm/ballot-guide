@@ -97,6 +97,10 @@ async def _call_real_api(
             "system_instruction": system_prompt,
             "temperature": 0.1,
             "max_output_tokens": max_tokens,
+            # Disable thinking tokens so the full max_output_tokens budget goes
+            # to the actual response (thinking consumes the budget silently on
+            # gemini-2.5-flash, leaving only ~20 tokens for JSON output).
+            "thinking_config": types.ThinkingConfig(thinking_budget=0),
         }
         if response_schema is not None:
             config_kwargs["response_mime_type"] = "application/json"
