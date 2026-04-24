@@ -1,4 +1,4 @@
-// API Container App — FastAPI, internal ingress, SQLite on File Share
+// API Container App — FastAPI, external ingress, SQLite on File Share
 param location string
 param environmentId string
 param registryLoginServer string
@@ -25,7 +25,7 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = {
     managedEnvironmentId: environmentId
     configuration: {
       ingress: {
-        external: false
+        external: true
         targetPort: 8000
         transport: 'auto'
       }
